@@ -44,6 +44,41 @@ cd ../backend && python manage.py runserver 127.0.0.1:8000
 Build'dan keyin butun ilova **http://127.0.0.1:8000** da ishlaydi:
 Django API bilan birga frontend'ning `index.html` va `assets/` fayllarini ham beradi.
 
+## Deploy (production cloud)
+
+| Qatlam   | Xizmat  | Holat |
+| -------- | ------- | ----- |
+| Frontend | Vercel  | ✅ https://frontend-six-sandy-34.vercel.app |
+| Backend  | Render  | `render.yaml` blueprint tayyor |
+| Repo     | GitHub (private) | https://github.com/abdulroufjon726-create/taklifnoma |
+
+### Backend → Render (blueprint)
+
+1. [render.com/dashboard](https://render.com/dashboard) → **New +** → **Blueprint**
+2. `abdulroufjon726-create/taklifnoma` repo'ni tanlang (GitHub ulanishi so'raladi)
+3. `render.yaml` avtomatik o'qiladi: Python xizmati, `migrate` + `collectstatic` +
+   `gunicorn` — hech narsa qo'lda sozlash shart emas
+4. Xizmat nomi **taklifnoma-api** → URL `https://taklifnoma-api.onrender.com`
+   bo'ladi (frontend `vercel.json` shu yerni kutadi)
+
+Render env variantlari (xizmat → Environment):
+
+- `DJANGO_SECRET_KEY` — blueprint avtomatik generatsiya qiladi
+- `DJANGO_CORS_ORIGINS` — agar to'g'ridan-to'g'ri API ulansa: `https://frontend-six-sandy-34.vercel.app`
+- `DATABASE_URL` — ixtiyoriy: Postgres (Neon/Supabase bepul) ulasangiz saqlanadi;
+  o'zgarmasa — SQLite (har bir redeploy'da ma'lumot yangilanadi)
+
+### Frontend → Vercel
+
+```bash
+cd frontend
+vercel deploy --prod --yes
+```
+
+`vercel.json` ikkita rewrite beradi: `/api/*` → Render backend (proksi) va
+barcha yo'llar → `index.html` (SPA history mode). API manzilini
+`VITE_API_BASE_URL` bilan to'g'ridan-to'g'ri ham qo'yish mumkin (CORS kerak bo'ladi).
+
 ## API
 
 | Metod | Endpoint                  | Vazifasi                                          |
@@ -82,6 +117,9 @@ Yasashda `category` (bayram kategoriyasi) va `event_type` maydonlari ham yuboril
     harflar sakraydi, aylanuvchi, xiralikdan tiniqlashuv
   - 6 ta karta ochilish animatsiyasi
   - **Standart animatsiyalar doim yoqilgan**: yumshoq suzish, taymer nuri, yulduzcha titrashi
+- **Ikonkalar**: barcha emoji stikerlar o'rniga **Iconify** ikonkalari (Phosphor/MDI/Lucide) —
+  52 ta ikona `frontend/src/data/icons.json` ichida **lokal** saqlanadi, runtime'da
+  API'ga so'rov yo'q → yuklanish tez va yengil.
 - **Taklifnoma sahifasi**: to'liq ekran, **scrollsiz** — barcha o'lchamlarga mos (container
   query), soniyagacha aniq taymer, tadbir boshlanganda tabrik.
 - **Ulashish**: kod + havola + QR nusxa olish; kirish sahifasida noto'g'ri kod uchun
