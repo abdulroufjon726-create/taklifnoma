@@ -14,28 +14,31 @@
         <span class="grad-text font-display text-3xl font-semibold">Taklifnoma</span>
       </RouterLink>
 
+      <div class="mb-4 flex justify-center">
+        <LangSwitch />
+      </div>
+
       <!-- Kod kiritish kartasi -->
-      <section class="glass card modal-in p-7 sm:p-9" :class="{ shake: shakeKey % 2 === 1 }" :key="shakeKey">
+      <section class="glass card modal-in p-7 sm:p-9" :class="{ shake: shaking }">
         <div class="text-center">
           <div class="mx-auto mb-4 grid size-16 place-items-center rounded-2xl bg-white/5 text-accent ring-1 ring-white/10">
             <AppIcon name="ph:lock-key" size="1.8rem" />
           </div>
-          <h1 class="font-display text-2xl font-semibold text-white sm:text-3xl">Taklifnomani oching</h1>
+          <h1 class="font-display text-2xl font-semibold text-white sm:text-3xl">{{ t('enter.title') }}</h1>
           <p class="mt-2 text-sm leading-relaxed text-white/55">
-            Sizga berilgan <b class="text-white/80">8 belgili kodni</b> kiriting. Kodni faqat siz bilgan odamlar ko'ra
-            oladi.
+            {{ t('enter.leadA') }}<b class="text-white/80">{{ t('enter.leadStrong') }}</b>{{ t('enter.leadB') }}
           </p>
         </div>
 
         <form class="mt-7 space-y-4" @submit.prevent="submit">
           <div>
-            <span class="lbl">Taklifnoma kodi</span>
+            <span class="lbl">{{ t('enter.codeLbl') }}</span>
             <input
               ref="inputEl"
               v-model="code"
               class="field text-center font-semibold tracking-[0.42em] uppercase placeholder:tracking-[0.3em] placeholder:normal-case sm:text-2xl"
               type="text"
-              inputmode="latin"
+              inputmode="text"
               autocomplete="off"
               autocapitalize="characters"
               spellcheck="false"
@@ -48,49 +51,65 @@
               <AppIcon name="ph:warning-circle" /> {{ error }}
             </p>
             <p v-else class="mt-2 text-center text-xs text-white/40">
-              Koddagi harflar katta-kichikligi ahamiyatsiz
+              {{ t('enter.caseNote') }}
             </p>
           </div>
 
           <button class="btn btn-primary w-full" type="submit" :disabled="raw.length !== 8 || loading">
             <template v-if="loading">
               <span class="size-4 animate-spin rounded-full border-2 border-black/30 border-t-black"></span>
-              Tekshirilmoqda...
+              {{ t('enter.checking') }}
             </template>
-            <template v-else>Taklifnomani ochish →</template>
+            <template v-else>{{ t('enter.submit') }}</template>
           </button>
         </form>
 
         <div class="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs text-white/45">
-          <span class="inline-flex items-center gap-1.5"><AppIcon name="ph:lock-key" /> Maxfiy</span>
+          <span class="inline-flex items-center gap-1.5"><AppIcon name="ph:lock-key" /> {{ t('enter.badge1') }}</span>
           <span class="h-3 w-px bg-white/15"></span>
-          <span class="inline-flex items-center gap-1.5"><AppIcon name="ph:users-three" /> Cheksiz ko'ruvchi</span>
+          <span class="inline-flex items-center gap-1.5"><AppIcon name="ph:users-three" /> {{ t('enter.badge2') }}</span>
           <span class="h-3 w-px bg-white/15"></span>
-          <span class="inline-flex items-center gap-1.5"><AppIcon name="ph:lightning" /> Aniq taymer</span>
+          <span class="inline-flex items-center gap-1.5"><AppIcon name="ph:lightning" /> {{ t('enter.badge3') }}</span>
         </div>
       </section>
 
       <p class="mt-6 text-center text-sm text-white/55">
-        Taklifnoma yasashmoqchimisiz?
-        <RouterLink to="/" class="ml-1 font-semibold text-accent transition hover:text-gold">Boshlash →</RouterLink>
+        {{ t('enter.footQ') }}
+        <RouterLink to="/" class="ml-1 font-semibold text-accent transition hover:text-gold">{{ t('enter.start') }}</RouterLink>
       </p>
     </div>
   </main>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import AppIcon from '../components/AppIcon.vue'
+import LangSwitch from '../components/LangSwitch.vue'
 import { useRouter } from 'vue-router'
 import { fetchInvitation } from '../api.js'
+import { useI18n } from '../i18n/index.js'
+
+const { t } = useI18n()
 
 const router = useRouter()
 
 const code = ref('')
 const error = ref('')
 const loading = ref(false)
-const shakeKey = ref(0)
+const shaking = ref(false)
 const inputEl = ref(null)
+let shakeTimer = null
+
+function shake() {
+  // :key bilan qayta mount qilish input fokusini yo'qotardi — endi faqat
+  // klass almashtirib animatsiyani qayta ishga tushiramiz.
+  shaking.value = false
+  clearTimeout(shakeTimer)
+  requestAnimationFrame(() => {
+    shaking.value = true
+    shakeTimer = setTimeout(() => (shaking.value = false), 500)
+  })
+}
 
 const raw = ref('')
 
@@ -118,18 +137,23 @@ async function submit() {
     router.push({ name: 'invitation', params: { code: raw.value } })
   } catch (e) {
     if (e.status === 404) {
-      error.value = 'Bunday kodli taklifnoma topilmadi. Kodni tekshirib qayta kiriting.'
+      error.value = t('enter.err404')
     } else if (e.status === 429) {
-      error.value = "Juda ko'p urinish bo'ldi. Bir ozdan so'ng qayta urinib ko'ring."
+      error.value = t('enter.err429')
     } else {
-      error.value = e.message || "Serverga ulanib bo'lmadi."
+      error.value = t('enter.errNet')
     }
-    shakeKey.value += 1
+    shake()
     loading.value = false
     nextTick(() => inputEl.value && inputEl.value.focus())
   }
   // muvaffaqiyat bo'lsa loading o'zi ketmaydi — sahifa almashadi
 }
 
-onMounted(() => inputEl.value && inputEl.value.focus())
+onMounted(() => {
+  document.title = 'Taklifnoma ✦ ' + t('enter.title')
+  inputEl.value && inputEl.value.focus()
+})
+
+onBeforeUnmount(() => clearTimeout(shakeTimer))
 </script>

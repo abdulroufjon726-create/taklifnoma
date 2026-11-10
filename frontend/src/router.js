@@ -1,17 +1,20 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import BuilderView from './views/BuilderView.vue'
-import EnterView from './views/EnterView.vue'
-import InvitationView from './views/InvitationView.vue'
 
+/*
+ * Route-level code splitting: mehmon ochadigan taklifnoma sahifasi
+ * builder (QR kutubxonasi, butun forma) kodini yuklamaydi — ochilish tez.
+ */
 const routes = [
-  { path: '/', name: 'builder', component: BuilderView },
-  { path: '/enter', name: 'enter', component: EnterView },
-  { path: '/i/:code', name: 'invitation', component: InvitationView },
+  { path: '/', name: 'builder', component: () => import('./views/BuilderView.vue') },
+  { path: '/enter', name: 'enter', component: () => import('./views/EnterView.vue') },
+  { path: '/i/:code', name: 'invitation', component: () => import('./views/InvitationView.vue') },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 
-export default createRouter({
+const router = createRouter({
   history: createWebHistory(),
   routes,
-  scrollBehavior: () => ({ top: 0 }),
+  scrollBehavior: (to, from, saved) => saved || { top: 0 },
 })
+
+export default router

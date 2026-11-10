@@ -25,6 +25,9 @@ const props = defineProps({
   anim: { type: String, default: 'fadeUp' },
   delay: { type: Number, default: 0 },
   tag: { type: String, default: 'span' },
+  /* Konvert pardazi ochilmaguncha typewriter ham kutishi kerak — aks holda
+     matn parda ortida yozilib bo'lib, ko'rinadigan paytda effekt yo'qoladi. */
+  active: { type: Boolean, default: true },
 })
 
 const typed = ref('')
@@ -68,7 +71,7 @@ function stopTypewriter() {
 }
 
 onMounted(() => {
-  if (mode.value === 'type') startTypewriter()
+  if (props.active && mode.value === 'type') startTypewriter()
 })
 
 onBeforeUnmount(stopTypewriter)
@@ -76,12 +79,21 @@ onBeforeUnmount(stopTypewriter)
 watch(
   () => [props.text, props.anim],
   () => {
-    if (mode.value === 'type') startTypewriter()
+    if (props.active && mode.value === 'type') startTypewriter()
     else {
       stopTypewriter()
       typed.value = ''
       typeDone.value = true
     }
+  },
+)
+
+watch(
+  () => props.active,
+  (on) => {
+    if (mode.value !== 'type') return
+    if (on) startTypewriter()
+    else stopTypewriter()
   },
 )
 </script>

@@ -108,10 +108,12 @@ export const PARTICLE_DEFS = {
     draw(ctx, p) {
       ctx.save()
       ctx.globalAlpha = p.alpha
-      ctx.translate(0, 0)
+      // Aylanish yurakning o'z markazi atrofida bo'lishi kerak (ilgari
+      // canvas (0,0) atrofida aylanib, yuraklar joyidan siljib ketardi).
+      ctx.translate(p.x, p.y)
       ctx.rotate(p.rot + Math.sin(p.sway) * 0.12)
       ctx.fillStyle = p.color
-      heartPath(ctx, p.x, p.y - p.s * 0.5, p.s)
+      heartPath(ctx, 0, -p.s * 0.5, p.s)
       ctx.fill()
       ctx.restore()
     },
@@ -132,7 +134,7 @@ export const PARTICLE_DEFS = {
         alpha: rnd(0.25, 0.9),
       }
     },
-    update(p, dt, w) {
+    update(p, dt, w, h) {
       p.y += p.vy * dt
       p.sway += p.swaySp * dt
       p.x += Math.sin(p.sway) * 15 * dt
@@ -471,97 +473,163 @@ export function createParticleEngine(canvas) {
   let started = false
   let effects = []
   let palette = ['#ffffff']
+  let density = 1
+  let pendingResize = 0
   const systems = new Map()
 
   const reduceMotion =
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 
-  function resize() {
+  /* O'lchamni haqiqiy o'zgarganдаgina qo'llaymiz: fullscreen/ResizeObserver
+     paytida canvas qayta-qayta qayta yaratilmaydi (bu lagning asosiy sababi). */
+  function applyResize() {
+    pendingResize = 0
     if (!canvas.isConnected) return
     const rect = canvas.getBoundingClientRect()
-    if (rect.width < 2 || rect.height < 2) return
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
-    w = rect.width
-    h = rect.height
+    const cw = Math.round(rect.width)
+    const ch = Math.round(rect.height)
+    if (cw < 2 || ch < 2) return
+    if (cw === w && ch === h) return
+    w = cw
+    h = ch
+
+    // Piksel byudjeti: katta ekranlarda DPR'ni 2dan pastga tushiramiz,
+    // shunda to'ldirish (fill-rate) telefonda ham og'ir bo'lmaydi.
+    let dpr = Math.min(window.devicePixelRatio || 1, 2)
+    const maxPixels = 2.6e6
+    if (w * h * dpr * dpr > maxPixels) {
+      dpr = Math.max(1, Math.sqrt(maxPixels / (w * h)))
+    }
     canvas.width = Math.round(w * dpr)
     canvas.height = Math.round(h * dpr)
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+
+    // Ekran maydoni: spawn tezligi va zarrachalar soni shunga moslashadi
+    density = Math.min(1.25, Math.max(0.35, (w * h) / (1366 * 768)))
+  }
+
+  function resize(immediate = false) {
+    if (immediate) {
+      if (pendingResize) {
+        cancelAnimationFrame(pendingResize)
+        pendingResize = 0
+      }
+      applyResize()
+      return
+    }
+    if (pendingResize) return
+    pendingResize = requestAnimationFrame(applyResize)
   }
 
   function syncSystems() {
     const wanted = new Set(effects.filter((id) => PARTICLE_DEFS[id]))
+    let removed = false
     for (const key of [...systems.keys()]) {
-      if (!wanted.has(key)) systems.delete(key)
+      if (!wanted.has(key)) {
+        systems.delete(key)
+        removed = true
+      }
     }
     for (const key of wanted) {
       if (!systems.has(key)) {
-        systems.set(key, { def: PARTICLE_DEFS[key], parts: [], acc: 0, palette })
+        systems.set(key, { def: PARTICLE_DEFS[key], parts: [], buf: [], acc: 0, palette })
       }
     }
+    if (removed && w && h) ctx.clearRect(0, 0, w, h)
   }
 
   function clearAll() {
-    for (const sys of systems.values()) sys.parts.length = 0
+    for (const sys of systems.values()) {
+      sys.parts.length = 0
+      sys.buf.length = 0
+    }
   }
 
   function frame(ts) {
     raf = requestAnimationFrame(frame)
-    const dt = Math.min(0.05, (ts - last) / 1000 || 0.016)
+    const dt = Math.min(0.05, Math.max(0.001, (ts - last) / 1000 || 0.016))
     last = ts
+
+    if (!systems.size) return
     if (!w || !h) {
-      resize()
+      applyResize()
       if (!w || !h) return
     }
+
     ctx.clearRect(0, 0, w, h)
-    // ekran kichik bo'lsa — kamroq, katta bo'lsa — biroz ko'proq (yengil)
-    const scale = Math.min(1.2, Math.max(0.4, (w * h) / (1280 * 720)))
+
+    // Global byudjet: bir vaqtda juda ko'p zarracha chizilmasin
+    const totalCap = Math.round(420 * Math.min(1, 0.55 + density * 0.45))
+    let total = 0
 
     for (const sys of systems.values()) {
       const def = sys.def
-      sys.acc += dt * def.rate * scale
+      const cap = Math.max(12, Math.round((def.max || 150) * Math.min(1, 0.5 + density * 0.5)))
+      sys.acc += dt * def.rate * density
+
       let guard = 0
-      while (sys.acc >= 1 && guard++ < 30) {
+      while (sys.acc >= 1 && guard++ < 24) {
         sys.acc -= 1
-        if (sys.parts.length >= (def.max || 150)) break
+        if (sys.parts.length >= cap || total >= totalCap) break
         if (def.spawn) def.spawn(sys, w, h, sys.palette)
         else sys.parts.push(def.make(w, h, sys.palette))
       }
-      if (sys.parts.length) {
-        const alive = []
-        for (const p of sys.parts) {
-          if (def.update(p, dt, w, h)) {
-            def.draw(ctx, p, sys.palette)
-            alive.push(p)
-          }
+
+      total += sys.parts.length
+      if (!sys.parts.length) continue
+
+      // Ikki bufer: har kadrda yangi massiv yaratilmaydi (GC bosimi kamayadi)
+      const alive = sys.buf
+      alive.length = 0
+      for (const p of sys.parts) {
+        if (def.update(p, dt, w, h)) {
+          def.draw(ctx, p, sys.palette)
+          alive.push(p)
         }
-        sys.parts = alive
       }
+      sys.buf = sys.parts
+      sys.parts = alive
     }
   }
 
   return {
     setEffects(ids) {
-      effects = Array.isArray(ids) ? [...ids] : []
+      const next = Array.isArray(ids) ? ids.filter((id) => PARTICLE_DEFS[id]) : []
+      const dedup = [...new Set(next)]
+      if (
+        dedup.length === effects.length &&
+        dedup.every((id, i) => id === effects[i])
+      ) {
+        return
+      }
+      effects = dedup
       syncSystems()
     },
     setPalette(colors) {
-      palette = Array.isArray(colors) && colors.length ? [...colors] : ['#ffffff']
+      const next = Array.isArray(colors) && colors.length ? [...colors] : ['#ffffff']
+      if (next.length === palette.length && next.every((c, i) => c === palette[i])) return
+      palette = next
       for (const sys of systems.values()) sys.palette = palette
       clearAll()
     },
-    resize,
+    resize: () => resize(false),
     start() {
       if (started || reduceMotion) return
       started = true
-      resize()
+      resize(true)
       last = performance.now()
       raf = requestAnimationFrame(frame)
     },
     stop() {
+      if (!started) return
       started = false
       cancelAnimationFrame(raf)
       raf = 0
-      ctx && ctx.clearRect(0, 0, w, h)
+      if (pendingResize) {
+        cancelAnimationFrame(pendingResize)
+        pendingResize = 0
+      }
+      if (w && h) ctx.clearRect(0, 0, w, h)
     },
   }
 }

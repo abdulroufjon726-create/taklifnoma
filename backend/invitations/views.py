@@ -1,3 +1,7 @@
+import logging
+
+from django.db import connection
+from django.db.models import F
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -6,6 +10,22 @@ from rest_framework.exceptions import NotFound
 
 from .models import Invitation
 from .serializers import InvitationCreateSerializer, InvitationSerializer
+
+logger = logging.getLogger(__name__)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def health(request):
+    """Yengil health-check: servis va baza tirikmi (Render health probe)."""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+    except Exception:
+        logger.exception("Health check failed")
+        return Response({"status": "error", "database": "down"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    return Response({"status": "ok"})
 
 
 @api_view(["POST"])
@@ -37,6 +57,7 @@ def invitation_detail(request, code):
     except Invitation.DoesNotExist:
         raise NotFound("Bunday kodli taklifnoma topilmadi.")
 
-    Invitation.objects.filter(pk=invitation.pk).update(views=invitation.views + 1)
+    # Atomar oshirish: bir vaqtda ochgan mehmonlar hisobni yo'qotmaydi.
+    Invitation.objects.filter(pk=invitation.pk).update(views=F("views") + 1)
     invitation.views += 1
     return Response(InvitationSerializer(invitation).data)

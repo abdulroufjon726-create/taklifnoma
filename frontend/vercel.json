@@ -1,6 +1,10 @@
 {
+  "build": {
+    "env": {
+      "VITE_API_BASE_URL": "https://taklifnoma-1.onrender.com"
+    }
+  },
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://taklifnoma-api.onrender.com/api/:path*" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

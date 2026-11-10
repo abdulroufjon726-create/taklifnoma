@@ -7,7 +7,7 @@
     </div>
     <div class="relative flex flex-col items-center gap-5">
       <span class="spinner"></span>
-      <p class="text-sm tracking-[0.3em] text-white/55 uppercase">Taklifnoma yuklanmoqda...</p>
+      <p class="text-sm tracking-[0.3em] text-white/55 uppercase">{{ t('inv.loading') }}</p>
     </div>
   </div>
 
@@ -22,56 +22,117 @@
       <div class="mx-auto mb-4 grid size-16 place-items-center rounded-2xl bg-white/5 text-accent ring-1 ring-white/10">
         <AppIcon name="ph:envelope-open" size="1.8rem" />
       </div>
-      <h1 class="font-display text-3xl font-semibold">Taklifnoma topilmadi</h1>
+      <h1 class="font-display text-3xl font-semibold">{{ t('inv.nfTitle') }}</h1>
       <p class="mt-3 text-sm leading-relaxed text-white/60">
-        <b class="text-white/85">{{ pretty || 'Kod' }}</b> bo'yicha taklifnoma mavjud emas. Kodni tekshiring yoki
-        uni yasagan odamdan qayta so'rang.
+        <b class="text-white/85">{{ pretty || t('inv.nfCode') }}</b>{{ t('inv.nfB') }}
       </p>
       <p v-if="status === 'error'" class="mt-2 text-xs text-red-300">{{ errorText }}</p>
       <div class="mt-6 flex flex-col gap-3">
-        <RouterLink to="/enter" class="btn btn-primary w-full">Yangi kod kirish →</RouterLink>
-        <RouterLink to="/" class="btn btn-ghost w-full">Taklifnoma yasash</RouterLink>
+        <RouterLink to="/enter" class="btn btn-primary w-full">{{ t('inv.enterNew') }}</RouterLink>
+        <RouterLink to="/" class="btn btn-ghost w-full">{{ t('inv.create') }}</RouterLink>
       </div>
     </div>
   </div>
 
   <!-- Taklifnoma: to'liq ekran, skrollsiz -->
   <div v-else class="fixed inset-0 h-[100dvh] w-full overflow-hidden bg-black">
-    <InvitationStage :data="invitation" />
+    <InvitationStage :data="invitation" :paused="!stageLive" />
+
+    <!-- KONVERT: taklifnomadan oldin ochiladigan pardaz -->
+    <div v-if="covered"
+      class="absolute inset-0 z-30 flex flex-col items-center justify-center gap-7 overflow-hidden bg-ink px-5 text-center"
+      :class="{ 'cover-out': openingAnim, 'cursor-wait': arming }"
+      :style="{
+        '--paper-scale': paperScale,
+        '--paper-dx': paperDx + 'px',
+        '--paper-dy': paperDy + 'px',
+      }"
+      role="button" tabindex="0" :aria-label="t('inv.coverBtn')"
+      @click="openCover" @keydown.enter.prevent="openCover" @keydown.space.prevent="openCover">
+      <div class="page-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="grain"></div>
+      </div>
+
+      <div class="absolute top-4 left-4 z-10 sm:top-6 sm:left-6 cover-ui">
+        <LangSwitch />
+      </div>
+
+      <!-- Konvert -->
+      <span class="env-scene relative" :class="{ 'cursor-pointer': !openingAnim, 'scene-open': openingAnim }">
+        <span class="env" :class="{ open: openingAnim }">
+          <span class="env-back"></span>
+          <span class="env-inner"></span>
+          <span class="env-letter">
+            <span class="env-letter-txt">
+              <b class="env-letter-name">{{ invitation.first_name }}</b>
+              <span v-if="paperDate" class="env-letter-date">{{ paperDate }}</span>
+              <span class="env-letter-orn">❦</span>
+            </span>
+          </span>
+          <span ref="paperEl" class="env-paper"></span>
+          <span class="env-pocket"></span>
+          <span class="env-flap"></span>
+          <span class="env-seal">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 48 48">
+              <path d="M0 0h48v48H0z" fill="none" />
+              <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                d="M31.65 39.54c1.461 0 2.886-.203 4.227-.592A18.35 18.35 0 0 1 24.988 42.5C14.765 42.5 6.485 34.221 6.485 24s8.28-18.5 18.503-18.5c4.07 0 7.836 1.314 10.89 3.552a15.2 15.2 0 0 0-4.229-.592c-8.585 0-15.542 6.956-15.542 15.54s6.957 15.54 15.542 15.54" />
+              <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                d="m35.832 18.003l1.756 3.557l3.927.57l-2.841 2.77l.67 3.91l-3.512-1.846l-3.512 1.846l.671-3.91l-2.841-2.77l3.927-.57z" />
+            </svg>
+          </span>
+        </span>
+      </span>
+      <button class="btn btn-primary relative cover-ui" type="button" @click.stop="openCover">
+        {{ t('inv.coverBtn') }}
+      </button>
+    </div>
+
+    <!-- Til -->
+    <div class="absolute top-4 left-4 z-20 sm:top-6 sm:left-6">
+      <LangSwitch />
+    </div>
+
+    <!-- To'liq ekran (agar avtomatik kirmagan bo'lsa) -->
+    <button v-if="!isFullscreen" type="button"
+      class="glass absolute top-4 left-1/2 z-20 -translate-x-1/2 rounded-full px-4 py-2 text-sm font-medium text-white/85 transition hover:text-white sm:top-6"
+      @click="goFullscreen">
+      <AppIcon name="ph:arrows-out" /> {{ t('inv.fsBtn') }}
+    </button>
 
     <!-- Ulashish -->
-    <button
-      type="button"
+    <button type="button"
       class="glass absolute top-4 right-4 z-20 rounded-full px-4 py-2 text-sm font-medium text-white/85 transition hover:text-white sm:top-6 sm:right-6"
-      @click="share"
-    >
-      {{ copied ? '✓ Nusxalandi' : '↗ Ulashish' }}
+      @click="share">
+      {{ copied ? t('inv.copied') : t('inv.share') }}
     </button>
 
     <!-- Boshqa taklifnomalarga o'tish -->
-    <RouterLink
-      to="/enter"
-      class="glass absolute bottom-4 left-4 z-20 rounded-full px-4 py-2 text-xs tracking-widest text-white/60 uppercase transition hover:text-white sm:bottom-6 sm:left-6"
-    >
-      Taklifnoma ✦ kod
+    <RouterLink to="/enter"
+      class="glass absolute bottom-4 left-4 z-20 rounded-full px-4 py-2 text-xs tracking-widest text-white/60 uppercase transition hover:text-white sm:bottom-6 sm:left-6">
+      {{ t('inv.codeBtn') }}
     </RouterLink>
 
-    <p
-      v-if="toast"
-      class="fade-in fixed bottom-6 left-1/2 z-30 -translate-x-1/2 rounded-full bg-white/10 px-5 py-2.5 text-sm text-white backdrop-blur-md"
-    >
+    <p v-if="toast"
+      class="fade-in fixed bottom-6 left-1/2 z-30 -translate-x-1/2 rounded-full bg-white/10 px-5 py-2.5 text-sm text-white backdrop-blur-md">
       {{ toast }}
     </p>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import InvitationStage from '../components/InvitationStage.vue'
 import AppIcon from '../components/AppIcon.vue'
-import { fetchInvitation, shareUrl, copyText } from '../api.js'
+import LangSwitch from '../components/LangSwitch.vue'
+import { fetchInvitation, getCachedInvitation, shareUrl, copyText } from '../api.js'
 import { prettyCode } from '../data/catalog.js'
+import { useI18n, formatDate } from '../i18n/index.js'
+
+const { t, locale } = useI18n()
 
 const route = useRoute()
 
@@ -81,23 +142,222 @@ const errorText = ref('')
 const copied = ref(false)
 const toast = ref('')
 let toastTimer = null
+const covered = ref(false) // konvert pardazi — bosilmaguncha taklifnoma yashirinadi
+const openingAnim = ref(false) // konvert animatsiyasi ketmoqda
+const arming = ref(false) // fullscreen kutilmoqda — animatsiya hali boshlanmagan
+const stageLive = ref(false) // taklifnoma animatsiyalari yoqilgan (pauza ochilgan)
+const paperScale = ref(9) // tekis qog'oz ekranni to'ldirishi uchun masshtab
+const paperDx = ref(0) // qog'oz markazini ekran markaziga surish
+const paperDy = ref(0)
+const paperEl = ref(null)
+let openTimer = null
+let liveTimer = null
+
+/* Konvert xoreografiyasi (CSS bilan biri-biriga mos bo'lishi shart):
+   mum 0.00–0.60 · qopqoq 0.60–1.55 · qog'oz chiqishi 1.50–2.40
+   · qog'oz kattalashishi 2.25–3.20 · pardaz so'nishi 3.15–3.65 */
+const STAGE_LIVE_AT = 2850
+const COVER_DONE_AT = 3700 // CSS coverOut 3.65s tugagachgina olib tashlaymiz
 
 const pretty = computed(() => prettyCode(route.params.code))
+// Konvert ichidagi qog'ozda yozilgan taklifnoma satri
+const paperDate = computed(() => (invitation.value ? formatDate(invitation.value.event_at) : ''))
+
+function updateTitle() {
+  if (!invitation.value) return
+  document.title = t('inv.docTitle')
+    .replace('{name}', invitation.value.first_name)
+    .replace('{code}', pretty.value)
+}
+
+function applyInvitation(data) {
+  invitation.value = data
+  status.value = 'ok'
+  covered.value = true // har bir ochilishda avval konvert
+  openingAnim.value = false
+  arming.value = false
+  stageLive.value = false
+  clearTimeout(openTimer)
+  clearTimeout(liveTimer)
+  updateTitle()
+  requestFullscreen()
+}
 
 async function load() {
   status.value = 'loading'
   invitation.value = null
+  covered.value = false
+  openingAnim.value = false
+  arming.value = false
+  stageLive.value = false
+  clearTimeout(openTimer)
+  clearTimeout(liveTimer)
+
+  // Kirish sahifasida tekshirilgan taklifnoma keshda bo'ladi — qayta
+  // so'rovsiz, darhol konvert ochiladi (ko'rishlar soni ham ikki marta
+  // oshmaydi).
+  const cached = getCachedInvitation(route.params.code)
+  if (cached) {
+    applyInvitation(cached)
+    return
+  }
+
   try {
-    invitation.value = await fetchInvitation(route.params.code)
-    status.value = 'ok'
-    document.title = `${invitation.value.first_name} — taklifnoma ✦ ${pretty.value}`
+    applyInvitation(await fetchInvitation(route.params.code))
   } catch (e) {
     if (e.status === 404) status.value = 'missing'
     else {
       status.value = 'error'
-      errorText.value = e.message || 'Serverga ulanib bo\'lmadi.'
+      if (e.status === 429) errorText.value = t('inv.err429')
+      else if (e.code === 'timeout' || e.code === 'network') errorText.value = t('inv.errTimeout')
+      else errorText.value = e.message || t('inv.errNet')
     }
   }
+}
+
+/* ---- Konvert: AVVAL fullscreen, KEYIN animatsiya ----
+   Fullscreen almashinuvi layout/resize keltiradi. Bu animatsiya paytida
+   yuz bersa kadrlar tushib ketadi — shuning uchun avval fullscreen'ni
+   kutamiz (ruxsat bo'lmasa qisqa taymautdan keyin davom etamiz), keyin
+   ikki kadr + kichik pauza bilan tinch holatni kutamiz va shundan
+   keyingina xoreografiyani boshlaymiz. */
+function fullscreenReady() {
+  return new Promise((resolve) => {
+    const el = document.documentElement
+    if (document.fullscreenElement || !el.requestFullscreen) return resolve()
+    let done = false
+    const finish = () => {
+      if (done) return
+      done = true
+      document.removeEventListener('fullscreenchange', finish)
+      clearTimeout(timer)
+      resolve()
+    }
+    const timer = setTimeout(finish, 420)
+    document.addEventListener('fullscreenchange', finish)
+    goFullscreen() // foydalanuvchi gesti — brauzer ruxsat beradi
+  })
+}
+
+/* Fullscreen'ga kirish oyna o'lchamini o'zgartiradi. O'lcham barqaror
+   bo'lmaguncha animatsiyani boshlamaymiz — aks holda resize paytida
+   kadrlar tushib ketadi. */
+function viewportSettled(maxMs = 500) {
+  return new Promise((resolve) => {
+    const t0 = performance.now()
+    let lw = -1
+    let lh = -1
+    let stable = 0
+    const check = () => {
+      const w = window.innerWidth
+      const h = window.innerHeight
+      stable = w === lw && h === lh ? stable + 1 : 0
+      lw = w
+      lh = h
+      if (stable >= 1 || performance.now() - t0 > maxMs) return resolve()
+      requestAnimationFrame(check)
+    }
+    requestAnimationFrame(check)
+  })
+}
+
+/* Ikki kadr = oldingi resize/repaint tugagan, kompozitor tayyor */
+function nextPaint() {
+  return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+}
+
+/* Tekis qog'oz ekranni to'liq qoplashi uchun masshtab va siljishni
+   o'lchaymiz: qog'oz markazi ekran markaziga tushiriladi, keyin
+   o'sha markaz atrofida kattalashtiriladi. */
+function measurePaper() {
+  const el = paperEl.value
+  if (!el) return
+  const prev = el.style.transform
+  el.style.transform = 'none' // o'lchov uchun transformni o'chiramiz
+  const r = el.getBoundingClientRect()
+  el.style.transform = prev
+  if (r.width < 10 || r.height < 10) return
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+  const need = Math.max(vw / r.width, vh / r.height) * 1.08 // 8% zaxira
+  paperScale.value = Math.min(Math.max(need, 3), 30)
+  paperDx.value = Math.round(vw / 2 - (r.left + r.width / 2))
+  paperDy.value = Math.round(vh / 2 - (r.top + r.height / 2))
+}
+
+async function openCover() {
+  if (!covered.value || openingAnim.value || arming.value) return
+  arming.value = true
+  await fullscreenReady()
+  await viewportSettled()
+  await nextPaint()
+  if (!covered.value) {
+    arming.value = false
+    return
+  }
+  measurePaper()
+  arming.value = false
+  startOpening()
+}
+
+function startOpening() {
+  openingAnim.value = true
+  clearTimeout(openTimer)
+  clearTimeout(liveTimer)
+  // Qog'oz ekranni to'ldirib, yo'qolib borayotganda taklifnoma
+  // konvert ichidan "chiqib kelayotgandek" animatsiya bilan jonlanadi
+  liveTimer = setTimeout(() => {
+    stageLive.value = true
+  }, STAGE_LIVE_AT)
+  openTimer = setTimeout(() => {
+    covered.value = false
+    openingAnim.value = false
+  }, COVER_DONE_AT)
+}
+
+/* ---- To'liq ekran (F11 kabi) ---------------------------------------- */
+const isFullscreen = ref(false)
+let fsWaitRetry = null
+
+function goFullscreen() {
+  const el = document.documentElement
+  if (!el.requestFullscreen || document.fullscreenElement) return
+  try {
+    const p = el.requestFullscreen({ navigationUI: 'hide' })
+    if (p && typeof p.catch === 'function') p.catch(() => { })
+  } catch {
+    /* brauzer ruxsat bermaydi — tugma qoladi */
+  }
+}
+
+function onFsChange() {
+  isFullscreen.value = !!document.fullscreenElement
+  if (isFullscreen.value && fsWaitRetry) {
+    window.removeEventListener('pointerdown', fsWaitRetry)
+    window.removeEventListener('keydown', fsWaitRetry)
+    fsWaitRetry = null
+  }
+}
+
+function armRetry() {
+  if (fsWaitRetry || document.fullscreenElement) return
+  fsWaitRetry = () => {
+    goFullscreen()
+    window.removeEventListener('pointerdown', fsWaitRetry)
+    window.removeEventListener('keydown', fsWaitRetry)
+    fsWaitRetry = null
+  }
+  window.addEventListener('pointerdown', fsWaitRetry, { once: true })
+  window.addEventListener('keydown', fsWaitRetry, { once: true })
+}
+
+function requestFullscreen() {
+  // Brauzerlar fullscreen'ni faqat foydalanuvchi gesti bilan beradi —
+  // yuklanishda behuda so'rov yubormaymiz (konsol ogohlantirishi ham yo'q),
+  // shunchaki birinchi bosishni kutamiz.
+  requestAnimationFrame(() => {
+    if (!document.fullscreenElement) armRetry()
+  })
 }
 
 function showToast(msg) {
@@ -109,7 +369,7 @@ function showToast(msg) {
 async function share() {
   const url = shareUrl(route.params.code)
   const data = invitation.value
-  const title = data ? `${data.first_name} — taklifnoma` : 'Taklifnoma'
+  const title = data ? `${data.first_name} — ${t('inv.shareSuffix')}` : 'Taklifnoma'
   if (navigator.share) {
     try {
       await navigator.share({ title, url })
@@ -120,10 +380,29 @@ async function share() {
   }
   const ok = await copyText(url)
   copied.value = ok
-  showToast(ok ? 'Havola nusxalandi!' : url)
+  showToast(ok ? t('inv.toastCopied') : url)
   setTimeout(() => (copied.value = false), 2400)
 }
 
-onMounted(load)
+onMounted(() => {
+  load()
+  document.addEventListener('fullscreenchange', onFsChange)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('fullscreenchange', onFsChange)
+  if (fsWaitRetry) {
+    window.removeEventListener('pointerdown', fsWaitRetry)
+    window.removeEventListener('keydown', fsWaitRetry)
+    fsWaitRetry = null
+  }
+  // Sahifadan chiqsak to'liq ekrandan chiqamiz
+  if (document.fullscreenElement && typeof document.exitFullscreen === 'function') {
+    document.exitFullscreen().catch(() => { })
+  }
+  clearTimeout(toastTimer)
+  clearTimeout(openTimer)
+  clearTimeout(liveTimer)
+})
 watch(() => route.params.code, load)
+watch(locale, updateTitle)
 </script>

@@ -20,6 +20,29 @@ ALLOWED_HOSTS = [
     if h.strip()
 ]
 
+# Render health-check va loglar uchun aniq ko'rinadigan xatoliklar
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "simple": {"format": "{levelname} {asctime} {name}: {message}", "style": "{"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "simple"},
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": os.environ.get("DJANGO_LOG_LEVEL", "INFO"),
+    },
+    "loggers": {
+        "django.request": {"handlers": ["console"], "level": "ERROR", "propagate": False},
+        "django.db.backends": {
+            "handlers": ["console"],
+            "level": os.environ.get("DJANGO_DB_LOG_LEVEL", "WARNING"),
+        },
+    },
+}
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -125,7 +148,7 @@ _extra_origins = [
     if o.strip()
 ]
 CORS_ALLOWED_ORIGINS += _extra_origins
-CSRF_TRUSTED_ORIGINS = list(_extra_origins)
+CSRF_TRUSTED_ORIGINS = list(_extra_origins) + ["https://taklifnoma-1.onrender.com"]
 # Aniq domen kiritilmagan bo'lsa — hamma joyga ruxsat (ochiq API, kod orqali himoyalangan)
 CORS_ALLOW_ALL_ORIGINS = not _extra_origins
 

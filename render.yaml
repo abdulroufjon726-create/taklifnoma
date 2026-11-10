@@ -6,18 +6,26 @@ services:
     runtime: python
     plan: free
     rootDir: backend
-    buildCommand: pip install -r requirements.txt && python manage.py migrate --noinput && python manage.py collectstatic --noinput
-    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+    # migrate/collectstatic build'da ham, start'da ham bajariladi:
+    # bepul tarifda baza bo'sh konteyner bilan qayta ko'tarilsa ham
+    # jadvallar tayyor bo'lishi kafolatlanadi (500 xatolik sababi shu edi).
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 60
+    healthCheckPath: /api/health/
+    autoDeploy: true
     envVars:
       - key: DJANGO_DEBUG
         value: "0"
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DJANGO_ALLOWED_HOSTS
-        value: taklifnoma-api.onrender.com
-      # Vercel frontend domenini kiriting (kerak bo'lsa — to'g'ridan-to'g'ri API uchun):
+        value: taklifnoma-1.onrender.com,.onrender.com
+      # Frontend domeni (ixtiyoriy) — aniq ro'yxat berilsa CORS faqat shu
+      # manzillarga ruxsat beradi. Bo'sh bo'lsa hamma origin ochiq qoladi.
       # - key: DJANGO_CORS_ORIGINS
-      #   value: https://taklifnoma.vercel.app
-      # Agar bepul Postgres ulasangiz (Neon/Supabase/Render Postgres):
+      #   value: https://taklifnoma-007.vercel.app
+      # Taklifnomalar RESTARTDAN KEYIN HAM SAQLANISHI uchun Postgres ulang
+      # (Neon / Supabase / Render Postgres). Ulanmasa SQLite ishlatiladi,
+      # lekin u vaqtinchalik — redeploy'da ma'lumot o'chadi.
       # - key: DATABASE_URL
       #   value: postgresql://user:pass@host:5432/dbname

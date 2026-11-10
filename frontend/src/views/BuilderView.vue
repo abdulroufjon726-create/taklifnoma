@@ -7,24 +7,25 @@
   </div>
 
   <!-- Header -->
-  <header class="sticky top-0 z-40 border-b border-white/[0.06] bg-ink/70 backdrop-blur-xl">
+  <header class="sticky top-0 z-40 rounded-b-2xl border-b border-white/[0.06] bg-ink/70 backdrop-blur-xl">
     <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
       <RouterLink to="/" class="flex items-center gap-2.5">
         <AppIcon name="ph:envelope-simple" size="1.7rem" class="text-accent" />
         <span class="grad-text font-display text-2xl font-semibold">Taklifnoma</span>
       </RouterLink>
-      <nav class="flex items-center gap-2 sm:gap-3">
+      <nav class="flex min-w-0 items-center gap-2 sm:gap-3">
         <RouterLink
           v-if="lastCode"
           :to="`/i/${lastCode}`"
           class="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-2 text-xs text-white/70 transition hover:border-accent/50 hover:text-white sm:inline-flex"
         >
-          Oxirgi: <b class="font-semibold tracking-widest text-gold">{{ prettyCode(lastCode) }}</b> →
+          {{ t('nav.last') }} <b class="font-semibold tracking-widest text-gold">{{ prettyCode(lastCode) }}</b> →
         </RouterLink>
-        <RouterLink to="/enter" class="btn btn-ghost !px-4 !py-2 text-sm">
+        <RouterLink to="/enter" class="btn btn-ghost !px-3 !py-2 text-sm sm:!px-4">
           <AppIcon name="ph:lock-key" />
-          Kodni kiriting
+          <span class="hidden sm:inline">{{ t('nav.enterCode') }}</span>
         </RouterLink>
+        <LangSwitch />
       </nav>
     </div>
   </header>
@@ -32,29 +33,29 @@
   <main class="mx-auto max-w-7xl px-4 pt-10 pb-24 sm:px-6">
     <!-- Sarlavha -->
     <div class="mx-auto mb-9 max-w-2xl text-center">
-      <p class="mb-3 text-xs font-semibold tracking-[0.35em] text-accent uppercase">Onlayn taklifnoma yasovchi</p>
+      <p class="mb-3 text-xs font-semibold tracking-[0.35em] text-accent uppercase">{{ t('builder.kicker') }}</p>
       <h1 class="font-display text-4xl leading-tight font-semibold sm:text-5xl">
-        O'z taklifnomangizni <span class="grad-text">yarating</span>
+        {{ t('builder.titleA') }} <span class="grad-text">{{ t('builder.titleB') }}</span>
       </h1>
       <p class="mt-3 leading-relaxed text-white/55">
-        Ma'lumotlarni kiriting, effekt va animatsiyalarni tanlang — natijani darhol jonli ko'ring. Tayyor bo'lgach,
-        <b class="text-white/80">maxfiy kod</b> olasiz.
+        {{ t('builder.leadA') }}
+        <b class="text-white/80">{{ t('builder.leadStrong') }}</b>{{ t('builder.leadB') }}
       </p>
     </div>
 
     <div class="grid items-start gap-8 lg:grid-cols-2">
       <!-- ============================ FORM ============================ -->
-      <section class="order-2 space-y-6 lg:order-1">
+      <section class="order-2 min-w-0 space-y-6 lg:order-1">
         <!-- 1. Ma'lumotlar -->
         <div class="glass card">
-          <h2 class="section-title"><span class="num">1</span> Tadbir ma'lumotlari</h2>
+          <h2 class="section-title"><span class="num">1</span> {{ t('builder.sec1') }}</h2>
           <div class="mt-5 space-y-4">
             <div>
-              <span class="lbl">Bayram / tadbir turi — bosganingizda tayyor dizayn qo'llanadi</span>
-              <ChoiceChips :options="HOLIDAYS" :model-value="form.category" @update:model-value="onCategory" />
+              <span class="lbl">{{ t('builder.catLabel') }}</span>
+              <ChoiceChips :options="holidayOptions" :model-value="form.category" @update:model-value="onCategory" />
               <p class="mt-2 flex items-center gap-1.5 text-xs text-white/45">
                 <AppIcon name="ph:calendar-blank" />
-                {{ currentHoliday ? currentHoliday.hint : 'O‘z uslubingizni tanlang' }}
+                {{ currentHoliday ? t('holidayHint.' + form.category) : t('builder.hintDefault') }}
               </p>
               <p
                 v-if="presetNote"
@@ -67,7 +68,7 @@
 
             <div class="grid gap-4 sm:grid-cols-2">
               <label class="block">
-                <span class="lbl">Ism *</span>
+                <span class="lbl">{{ t('builder.fName') }}</span>
                 <input
                   v-model="form.first_name"
                   class="field"
@@ -76,45 +77,45 @@
                   maxlength="80"
                   placeholder="Masalan: Aziz"
                 />
-                <span v-if="showErrors && !form.first_name.trim()" class="err-text">Ismni kiriting *</span>
+                <span v-if="showErrors && !form.first_name.trim()" class="err-text">{{ t('builder.fNameErr') }}</span>
               </label>
               <label class="block">
-                <span class="lbl">Familiya</span>
-                <input v-model="form.last_name" class="field" type="text" maxlength="80" placeholder="Masalan: Karimov" />
+                <span class="lbl">{{ t('builder.fLast') }}</span>
+                <input v-model="form.last_name" class="field" type="text" maxlength="80" :placeholder="t('builder.fLastPh')" />
               </label>
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
               <label class="block">
-                <span class="lbl">Kimga — qabul qiluvchi</span>
+                <span class="lbl">{{ t('builder.fTo') }}</span>
                 <input
                   v-model="form.to_name"
                   class="field"
                   type="text"
                   maxlength="120"
-                  placeholder="Barcha do'stlarimizga"
+                  :placeholder="t('builder.fToPh')"
                 />
               </label>
               <label class="block">
-                <span class="lbl">Kimdan — yuboruvchi</span>
+                <span class="lbl">{{ t('builder.fFrom') }}</span>
                 <input
                   v-model="form.from_name"
                   class="field"
                   type="text"
                   maxlength="120"
-                  placeholder="Aziz va Malika oilasidan"
+                  :placeholder="t('builder.fFromPh')"
                 />
               </label>
             </div>
 
             <label class="block">
-              <span class="lbl">Joy / manzil</span>
+              <span class="lbl">{{ t('builder.fPlace') }}</span>
               <input
                 v-model="form.place"
                 class="field"
                 type="text"
                 maxlength="200"
-                placeholder="Toshkent, Markaziy to'yxona"
+                :placeholder="t('builder.fPlacePh')"
               />
             </label>
           </div>
@@ -122,11 +123,11 @@
 
         <!-- 2. Qachon -->
         <div class="glass card">
-          <h2 class="section-title"><span class="num">2</span> Qachon?</h2>
+          <h2 class="section-title"><span class="num">2</span> {{ t('builder.sec2') }}</h2>
           <div class="mt-5 space-y-4">
             <div class="grid gap-4 sm:grid-cols-2">
               <label class="block">
-                <span class="lbl">Sana *</span>
+                <span class="lbl">{{ t('builder.fDate') }}</span>
                 <input
                   v-model="form.date"
                   class="field"
@@ -134,22 +135,22 @@
                   type="date"
                   :min="todayStr"
                 />
-                <span v-if="showErrors && !form.date" class="err-text">Sanani tanlang *</span>
+                <span v-if="showErrors && !form.date" class="err-text">{{ t('builder.fDateErr') }}</span>
               </label>
               <label class="block">
-                <span class="lbl">Vaqt *</span>
+                <span class="lbl">{{ t('builder.fTime') }}</span>
                 <input
                   v-model="form.time"
                   class="field"
                   :class="{ err: showErrors && !form.time }"
                   type="time"
                 />
-                <span v-if="showErrors && !form.time" class="err-text">Vaqt kiriting *</span>
+                <span v-if="showErrors && !form.time" class="err-text">{{ t('builder.fTimeErr') }}</span>
               </label>
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
-              <span class="text-xs text-white/45">Tez to'ldirish:</span>
+              <span class="text-xs text-white/45">{{ t('builder.quickLbl') }}</span>
               <button
                 v-for="q in quickDates"
                 :key="q.label"
@@ -164,8 +165,7 @@
             <p class="flex items-start gap-2 rounded-xl border border-accent/20 bg-accent/[0.07] px-4 py-3 text-sm text-white/70">
               <AppIcon name="ph:hourglass" class="mt-0.5" />
               <span>
-                Taymer <b class="text-gold">kun, soat, daqiqa va soniya</b> bo'yicha aniq hisoblanadi — mehmonlar
-                tadbirgacha qolgan vaqtni soniyagacha ko'radi.
+                {{ t('builder.timerA') }}<b class="text-gold">{{ t('builder.timerB') }}</b>{{ t('builder.timerC') }}
               </span>
             </p>
           </div>
@@ -173,7 +173,7 @@
 
         <!-- 3. So'zlar -->
         <div class="glass card">
-          <h2 class="section-title"><span class="num">3</span> Taklifnoma so'zlari</h2>
+          <h2 class="section-title"><span class="num">3</span> {{ t('builder.sec3') }}</h2>
           <div class="mt-5">
             <TextComposer v-model="form.texts" :max="MAX_TEXTS" :defaults="categoryDefaults" />
           </div>
@@ -181,9 +181,9 @@
 
         <!-- 4. Dizayn -->
         <div class="glass card">
-          <h2 class="section-title"><span class="num">4</span> Dizayn temasi</h2>
+          <h2 class="section-title"><span class="num">4</span> {{ t('builder.sec4') }}</h2>
           <div class="mt-5">
-            <ChoiceChips :options="THEMES" v-model="form.theme">
+            <ChoiceChips :options="themeOptions" v-model="form.theme">
               <template #item="{ o }">
                 <span
                   class="size-4 rounded-full ring-1 ring-white/30"
@@ -199,39 +199,39 @@
 
         <!-- 5. Effekt va animatsiyalar -->
         <div class="glass card">
-          <h2 class="section-title"><span class="num">5</span> Effekt va animatsiyalar</h2>
+          <h2 class="section-title"><span class="num">5</span> {{ t('builder.sec5') }}</h2>
 
           <div class="mt-5 space-y-5">
             <div>
               <span class="lbl">
-                Fon effektlari — bir nechtasini tanlang
-                <b class="ml-1 text-accent">({{ form.ambient_effects.length }} ta)</b>
+                {{ t('builder.ambientLbl') }}
+                <b class="ml-1 text-accent">{{ tf('builder.count', { n: form.ambient_effects.length }) }}</b>
               </span>
-              <ChoiceChips :options="AMBIENT_EFFECTS" v-model="form.ambient_effects" multiple />
+              <ChoiceChips :options="ambientOptions" v-model="form.ambient_effects" multiple />
             </div>
 
             <div>
               <span class="lbl">
-                Harakatli effektlar — cheklanmagan
-                <b class="ml-1 text-accent">({{ form.particle_effects.length }} ta)</b>
+                {{ t('builder.particleLbl') }}
+                <b class="ml-1 text-accent">{{ tf('builder.count', { n: form.particle_effects.length }) }}</b>
               </span>
-              <ChoiceChips :options="PARTICLE_EFFECTS" v-model="form.particle_effects" multiple />
+              <ChoiceChips :options="particleOptions" v-model="form.particle_effects" multiple />
             </div>
 
             <div class="grid gap-5 sm:grid-cols-2">
               <div>
-                <span class="lbl">Matn animatsiyasi — bitta</span>
-                <ChoiceChips :options="TEXT_ANIMS" v-model="form.text_anim" />
+                <span class="lbl">{{ t('builder.textAnimLbl') }}</span>
+                <ChoiceChips :options="textAnimOptions" v-model="form.text_anim" />
               </div>
               <div>
-                <span class="lbl">Karta ochilish animatsiyasi — bitta</span>
-                <ChoiceChips :options="CARD_ANIMS" v-model="form.card_anim" />
+                <span class="lbl">{{ t('builder.cardAnimLbl') }}</span>
+                <ChoiceChips :options="cardAnimOptions" v-model="form.card_anim" />
               </div>
             </div>
 
             <p class="flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs leading-relaxed text-white/55">
               <AppIcon name="ph:sparkle" class="mt-0.5" />
-              <span><b class="text-white/80">Standart animatsiyalar</b> doim yoqilgan: yumshoq suzish, taymer nuri, yulduzcha titrashi va effektli fon. Effektlarni xohlagancha ko'paytiring — cheklov yo'q.</span>
+              <span><b class="text-white/80">{{ t('builder.stdA') }}</b>{{ t('builder.stdB') }}</span>
             </p>
           </div>
         </div>
@@ -241,34 +241,33 @@
           <button class="btn btn-primary w-full px-8 text-lg sm:w-auto" type="button" :disabled="loading" @click="submit">
             <template v-if="loading">
               <span class="size-4 animate-spin rounded-full border-2 border-black/30 border-t-black"></span>
-              Yaratilmoqda...
+              {{ t('builder.submitting') }}
             </template>
-            <template v-else><AppIcon name="ph:sparkle" /> Taklifnomani yasash</template>
+            <template v-else><AppIcon name="ph:sparkle" /> {{ t('builder.submit') }}</template>
           </button>
           <p v-if="submitError" class="err-text flex items-center justify-center gap-1.5" role="alert">
             <AppIcon name="ph:warning-circle" /> {{ submitError }}
           </p>
           <p class="mt-3 text-xs text-white/45">
-            Yasagach, sizga <b class="text-white/70">maxfiy 8 belgili kod</b> va havola beriladi — uni faqat
-            xohlagan odamingizga yuborasiz.
+            {{ t('builder.footA') }} <b class="text-white/70">{{ t('builder.footStrong') }}</b>{{ t('builder.footB') }}
           </p>
         </div>
       </section>
 
       <!-- ============================ PREVIEW ============================ -->
-      <aside class="order-1 self-start lg:sticky lg:top-24 lg:order-2">
+      <aside class="order-1 min-w-0 self-start lg:sticky lg:top-24 lg:order-2">
         <div class="glass card p-4">
           <div class="mb-3 flex items-center justify-between gap-3">
-            <span class="lbl !mb-0">● Jonli ko'rinish</span>
+            <span class="lbl !mb-0">{{ t('builder.live') }}</span>
             <button class="chip !py-1.5 !text-xs" type="button" @click="showFullscreen = true">
-              <AppIcon name="ph:arrows-out" /> To'liq ekran
+              <AppIcon name="ph:arrows-out" /> {{ t('builder.fullscreen') }}
             </button>
           </div>
           <div class="relative aspect-[3/4] w-full overflow-hidden rounded-2xl ring-1 ring-white/10 lg:aspect-[4/3]">
-            <InvitationStage :data="draft" />
+            <InvitationStage :data="draft" :paused="previewPaused" />
           </div>
           <p class="mt-3 text-center text-xs text-white/45">
-            Har bir o'zgarish shu yerda darhol aks etadi — taymer ham jonli ishlaydi.
+            {{ t('builder.prevNote') }}
           </p>
         </div>
       </aside>
@@ -283,7 +282,7 @@
       type="button"
       @click="showFullscreen = false"
     >
-      ✕ Yopish
+      {{ t('builder.close') }}
     </button>
   </div>
 
@@ -306,12 +305,12 @@
       <div class="mx-auto mb-3 grid size-14 place-items-center rounded-2xl bg-white/5 text-accent ring-1 ring-white/10">
         <AppIcon name="ph:confetti" size="1.7rem" />
       </div>
-      <h2 class="font-display text-3xl font-semibold">Taklifnomangiz tayyor!</h2>
-      <p class="mt-2 text-sm text-white/55">Bu kodni faqat xohlagan odamlaringizga yuboring.</p>
+      <h2 class="font-display text-3xl font-semibold">{{ t('builder.resTitle') }}</h2>
+      <p class="mt-2 text-sm text-white/55">{{ t('builder.resSub') }}</p>
 
       <!-- KOD -->
       <div class="mt-5 rounded-2xl border border-gold/30 bg-gold/[0.07] px-4 py-5">
-        <span class="lbl !mb-1">Taklifnoma kodi</span>
+        <span class="lbl !mb-1">{{ t('builder.codeLbl') }}</span>
         <p class="grad-text text-3xl font-bold tracking-[0.3em] select-all sm:text-4xl">
           {{ prettyCode(result.code) }}
         </p>
@@ -321,31 +320,35 @@
       <div class="mt-4 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] p-2 pl-4">
         <span class="min-w-0 flex-1 truncate text-left text-xs text-white/60">{{ resultLink }}</span>
         <button class="chip !py-1.5 !text-xs shrink-0" type="button" @click="copyLink">
-          {{ flash === 'link' ? '✓ Nusxalandi' : 'Linkni nusxalash' }}
+          {{ flash === 'link' ? t('builder.linkCopied') : t('builder.copyLink') }}
         </button>
       </div>
 
       <div class="mt-4 grid gap-3 sm:grid-cols-2">
-        <RouterLink :to="`/i/${result.code}`" class="btn btn-primary">Taklifnomani ochish →</RouterLink>
+        <RouterLink :to="`/i/${result.code}`" class="btn btn-primary">{{ t('builder.open') }}</RouterLink>
         <button class="btn btn-ghost" type="button" @click="copyCode">
-          {{ flash === 'code' ? '✓ Kod nusxalandi' : 'Kodni nusxalash' }}
+          {{ flash === 'code' ? t('builder.codeCopied') : t('builder.copyCode') }}
         </button>
-        <button class="btn btn-ghost sm:col-span-2" type="button" @click="resetAll">+ Yangi taklifnoma yasash</button>
+        <button class="btn btn-ghost sm:col-span-2" type="button" @click="resetAll">{{ t('builder.newOne') }}</button>
       </div>
 
       <div class="mt-5 flex items-center justify-center gap-3 text-xs text-white/45">
-        <img
-          v-if="qrOk"
-          :src="qrUrl"
-          alt="QR kod"
-          width="84"
-          height="84"
-          class="rounded-lg bg-white p-1"
-          @error="qrOk = false"
-        />
+        <div v-if="qrData" class="text-center">
+          <img
+            :src="qrData"
+            alt="QR kod"
+            width="96"
+            height="96"
+            class="rounded-lg bg-white p-1"
+          />
+          <p class="mt-1.5 text-[10px] text-white/40">{{ t('builder.qrCap') }}</p>
+          <button class="chip !py-1 !px-2.5 !text-[10px] mt-1.5" type="button" @click="downloadQr">
+            {{ flash === 'qr' ? t('builder.qrDlDone') : t('builder.qrDl') }}
+          </button>
+        </div>
         <p class="flex items-start gap-2 max-w-[24ch] text-left leading-relaxed">
           <AppIcon name="ph:lock-key" class="mt-0.5" />
-          <span>Hech kim noto'g'ri koddan sizning taklifnomangizni ko'ra olmaydi. Bir kodni istalgan son odam ko'ra oladi.</span>
+          <span>{{ t('builder.qrNote') }}</span>
         </p>
       </div>
     </div>
@@ -358,12 +361,13 @@ import ChoiceChips from '../components/ChoiceChips.vue'
 import AppIcon from '../components/AppIcon.vue'
 import TextComposer from '../components/TextComposer.vue'
 import InvitationStage from '../components/InvitationStage.vue'
-import { createInvitation, shareUrl, copyText } from '../api.js'
+import LangSwitch from '../components/LangSwitch.vue'
+import { createInvitation, shareUrl, copyText, warmUp } from '../api.js'
+import { useI18n, tf } from '../i18n/index.js'
 import {
   HOLIDAYS,
   holidayById,
   nextOccurrence,
-  DEFAULT_TEXTS,
   THEMES,
   AMBIENT_EFFECTS,
   PARTICLE_EFFECTS,
@@ -373,17 +377,33 @@ import {
   prettyCode,
 } from '../data/catalog.js'
 
+const { t, locale } = useI18n()
+
+/* Katalog yorliqlari — joriy tilga reaktiv */
+const withLabels = (list, ns) =>
+  computed(() => list.map((o) => ({ ...o, label: t(`${ns}.${o.id}`) })))
+const holidayOptions = withLabels(HOLIDAYS, 'holiday')
+const themeOptions = withLabels(THEMES, 'theme')
+const ambientOptions = withLabels(AMBIENT_EFFECTS, 'ambient')
+const particleOptions = withLabels(PARTICLE_EFFECTS, 'particle')
+const textAnimOptions = withLabels(TEXT_ANIMS, 'textAnim')
+const cardAnimOptions = withLabels(CARD_ANIMS, 'cardAnim')
+
 const today = new Date()
 const ymd = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+/* Sana tanlanmagan paytda ham barqaror (o'zgarmaydigan) fallback vaqt —
+   aks holda har renderda countdown qayta ishga tushardi. */
+const FALLBACK_EVENT_AT = new Date(Date.now() + 3 * 86400000 + 3600000).toISOString()
 
 const form = reactive({
   category: 'toy',
   event_type: 'toy',
   first_name: '',
   last_name: '',
-  to_name: "Barcha do'stlarimizga",
-  from_name: 'Bizdan',
+  to_name: t('presetTo.toy'),
+  from_name: t('presetFrom.toy'),
   place: '',
   date: '',
   time: '18:00',
@@ -392,25 +412,26 @@ const form = reactive({
   particle_effects: ['confetti', 'hearts'],
   text_anim: 'fadeUp',
   card_anim: 'scaleIn',
-  texts: ['Hurmatli mehmonlar!', 'Keling, birga nishonlaymiz!'],
+  texts: (t('presetTexts.toy') || []).slice(0, 2),
 })
 
 const todayStr = ymd(today)
-const quickDates = [
-  { label: 'Bugun', days: 0 },
-  { label: 'Ertaga', days: 1 },
-  { label: '+1 hafta', days: 7 },
-  { label: '+1 oy', days: 30 },
-]
+const quickDates = computed(() => [
+  { label: t('builder.quickToday'), days: 0 },
+  { label: t('builder.quickTomorrow'), days: 1 },
+  { label: t('builder.quickWeek'), days: 7 },
+  { label: t('builder.quickMonth'), days: 30 },
+])
 
 /* ---- Bayram preseti ------------------------------------------------- */
 const presetNote = ref('')
 const currentHoliday = computed(() => holidayById(form.category))
 
-/* Tanlangan bayramning tayyor matnlari + umumiy matnlar */
+/* Tanlangan bayramning tayyor matnlari + umumiy matnlar (joriy til) */
 const categoryDefaults = computed(() => {
-  const own = holidayById(form.category)?.preset?.texts || []
-  return [...own, ...DEFAULT_TEXTS.filter((t) => !own.includes(t))]
+  const own = t(`presetTexts.${form.category}`) || []
+  const common = t('defaultTexts') || []
+  return [...own, ...common.filter((x) => !own.includes(x))]
 })
 
 let applyingPreset = false
@@ -456,10 +477,12 @@ function onCategory(id) {
   form.text_anim = p.text_anim
   form.card_anim = p.card_anim
   if (!contactDirty.value) {
-    form.to_name = p.to_name
-    form.from_name = p.from_name
+    form.to_name = t(`presetTo.${id}`) || p.to_name
+    form.from_name = t(`presetFrom.${id}`) || p.from_name
   }
-  if (!textsDirty.value) form.texts = [...p.texts]
+  if (!textsDirty.value) {
+    form.texts = [...(t(`presetTexts.${id}`) || p.texts)]
+  }
 
   let dateFilled = false
   if (h.date && (!form.date || dateAuto)) {
@@ -470,9 +493,9 @@ function onCategory(id) {
   applyingPreset = false
 
   presetNote.value =
-    `«${h.label}» uchun tayyor dizayn qo'llandi: tema, effektlar, animatsiyalar va matnlar. ` +
-    (dateFilled ? 'Sana avtomatik to‘ldirildi. ' : '') +
-    'Xohlagancha o‘zgartiring.'
+    tf('builder.presetApplied', { name: t(`holiday.${id}`) }) +
+    (dateFilled ? t('builder.presetDate') : '') +
+    t('builder.presetFree')
   clearTimeout(noteTimer)
   noteTimer = setTimeout(() => (presetNote.value = ''), 5000)
 }
@@ -483,9 +506,13 @@ const submitError = ref('')
 const result = ref(null)
 const flash = ref('')
 const showFullscreen = ref(false)
-const qrOk = ref(true)
+const qrData = ref('') // mahalliy QR — aynan shu taklifnoma havolasidan
 const lastCode = ref('')
 let flashTimer = null
+
+/* Modal/to'liq ekran ochilganda orqadagi preview animatsiyalari to'xtaydi —
+   ikki joyda bir xil canvas ishlamaydi, telefon ham qizimaydi. */
+const previewPaused = computed(() => showFullscreen.value || !!result.value)
 
 function applyQuick(days) {
   const d = new Date()
@@ -504,12 +531,12 @@ const draft = computed(() => ({
   code: 'PREVIEW',
   category: form.category,
   event_type: form.event_type,
-  first_name: form.first_name.trim() || 'Ism',
+  first_name: form.first_name.trim() || t('builder.defName'),
   last_name: form.last_name.trim(),
-  to_name: form.to_name.trim() || 'Kimga',
-  from_name: form.from_name.trim() || 'Kimdan',
+  to_name: form.to_name.trim() || t('builder.defTo'),
+  from_name: form.from_name.trim() || t('builder.defFrom'),
   place: form.place.trim(),
-  event_at: isoFromDate(form.date, form.time) || new Date(Date.now() + 3 * 86400000 + 3600000).toISOString(),
+  event_at: isoFromDate(form.date, form.time) || FALLBACK_EVENT_AT,
   theme: form.theme,
   ambient_effects: form.ambient_effects,
   particle_effects: form.particle_effects,
@@ -520,15 +547,33 @@ const draft = computed(() => ({
 
 const resultLink = computed(() => (result.value ? shareUrl(result.value.code) : ''))
 
-const qrUrl = computed(() =>
-  result.value
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=160x160&bgcolor=ffffff&color=0a0912&data=${encodeURIComponent(
-        shareUrl(result.value.code),
-      )}`
-    : '',
-)
+/* Reaktiv yorliqlar uchun til o'zgarishini kuzatish */
+watch(locale, () => {
+  document.title = 'Taklifnoma ✦ ' + t('builder.kicker')
+})
+
+/* QR shu taklifnomaning aniq havolasidan mahalliy yaratiladi —
+   boshqa taklifnomaga qarab ketishi mumkin emas, tashqi server yo'q */
+async function makeQr(code) {
+  qrData.value = ''
+  if (!code) return
+  try {
+    // QR kutubxonasi faqat kerak bo'lganda yuklanadi (boshlang'ich bundle yengil)
+    const mod = await import('qrcode')
+    const QRCode = mod.default || mod
+    qrData.value = await QRCode.toDataURL(shareUrl(code), {
+      width: 320,
+      margin: 1,
+      color: { dark: '#0a0912', light: '#ffffff' },
+      errorCorrectionLevel: 'M',
+    })
+  } catch {
+    qrData.value = ''
+  }
+}
 
 async function submit() {
+  if (loading.value) return
   submitError.value = ''
   showErrors.value = true
   if (!form.first_name.trim() || !form.date || !form.time) {
@@ -541,8 +586,8 @@ async function submit() {
       event_type: form.event_type,
       first_name: form.first_name.trim(),
       last_name: form.last_name.trim(),
-      to_name: form.to_name.trim() || "Barcha do'stlarimizga",
-      from_name: form.from_name.trim() || 'Bizdan',
+      to_name: form.to_name.trim() || t('presetTo.toy'),
+      from_name: form.from_name.trim() || t('presetFrom.toy'),
       event_at: isoFromDate(form.date, form.time),
       place: form.place.trim(),
       theme: form.theme,
@@ -555,6 +600,7 @@ async function submit() {
     const data = await createInvitation(payload)
     result.value = data
     lastCode.value = data.code
+    makeQr(data.code)
     try {
       localStorage.setItem('taklifnoma:last', data.code)
     } catch {
@@ -563,9 +609,9 @@ async function submit() {
     showFullscreen.value = false
   } catch (e) {
     if (e.status === 429) {
-      submitError.value = "Juda ko'p so'rov yuborildi — birozdan so'ng qayta urinib ko'ring."
+      submitError.value = t('builder.err429')
     } else {
-      submitError.value = e.message || "Serverda xatolik yuz berdi. Qayta urinib ko'ring."
+      submitError.value = e.message || t('builder.errGeneric')
     }
   } finally {
     loading.value = false
@@ -590,12 +636,26 @@ async function copyLink() {
   if (ok) flashMsg('link')
 }
 
+/* QR'ni PNG fayl sifatida yuklab olish — lokal data-URL'dan, code nom bilan */
+function downloadQr() {
+  if (!qrData.value || !result.value) return
+  const a = document.createElement('a')
+  a.href = qrData.value
+  a.download = `taklifnoma-${prettyCode(result.value.code)}.png`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  flashMsg('qr')
+}
+
 function closeResult() {
   result.value = null
+  qrData.value = ''
 }
 
 function resetAll() {
   result.value = null
+  qrData.value = ''
   showErrors.value = false
   submitError.value = ''
   form.first_name = ''
@@ -612,7 +672,10 @@ function onKey(e) {
 }
 
 onMounted(() => {
-  document.title = 'Taklifnoma ✦ Onlayn taklifnoma yasovchi'
+  document.title = 'Taklifnoma ✦ ' + t('builder.kicker')
+  // Render bepul tarifi uxlab qolishi mumkin — forma to'ldirilayotganda
+  // backendni oldindan uyg'otamiz, submit kutmaydi.
+  warmUp()
   try {
     lastCode.value = localStorage.getItem('taklifnoma:last') || ''
   } catch {

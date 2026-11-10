@@ -6,12 +6,15 @@
         <span class="cd-lbl">{{ u.label }}</span>
       </div>
     </div>
-    <p v-else class="cd-done">Bayram muborak bo'lsin! ✦</p>
+    <p v-else class="cd-done">{{ t('cd.done') }}</p>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { useI18n } from '../i18n/index.js'
+
+const { t } = useI18n()
 
 const props = defineProps({
   target: { type: [String, Number, Date], required: true },
@@ -33,10 +36,10 @@ const finished = computed(() => targetMs.value > 0 && diff.value <= 0)
 const units = computed(() => {
   const d = diff.value
   return [
-    { key: 'd', label: 'Kun', value: Math.floor(d / 86400000) },
-    { key: 'h', label: 'Soat', value: Math.floor(d / 3600000) % 24 },
-    { key: 'm', label: 'Daqiqa', value: Math.floor(d / 60000) % 60 },
-    { key: 's', label: 'Soniya', value: Math.floor(d / 1000) % 60 },
+    { key: 'd', label: t('cd.d'), value: Math.floor(d / 86400000) },
+    { key: 'h', label: t('cd.h'), value: Math.floor(d / 3600000) % 24 },
+    { key: 'm', label: t('cd.m'), value: Math.floor(d / 60000) % 60 },
+    { key: 's', label: t('cd.s'), value: Math.floor(d / 1000) % 60 },
   ]
 })
 
@@ -51,10 +54,48 @@ function tick() {
   }
 }
 
+/*
+ * 250ms interval o'rniga soniyaga tekislangan setTimeout: sekund har doim
+ * aniq o'zgaradi, ortiqcha 4x render bo'lmaydi. Tab yashiringanda to'xtaydi.
+ */
+function schedule() {
+  clearTimeout(timer)
+  if (document.hidden) return
+  const delay = 1000 - (Date.now() % 1000) + 8
+  timer = setTimeout(() => {
+    tick()
+    schedule()
+  }, delay)
+}
+
+function onVisibility() {
+  if (document.hidden) {
+    clearTimeout(timer)
+    timer = null
+  } else {
+    tick()
+    schedule()
+  }
+}
+
 onMounted(() => {
   tick()
-  timer = setInterval(tick, 250)
+  schedule()
+  document.addEventListener('visibilitychange', onVisibility)
 })
-onBeforeUnmount(() => clearInterval(timer))
-watch(() => props.target, tick)
+
+onBeforeUnmount(() => {
+  clearTimeout(timer)
+  timer = null
+  document.removeEventListener('visibilitychange', onVisibility)
+})
+
+watch(
+  () => props.target,
+  () => {
+    finishedOnce.value = false
+    tick()
+    schedule()
+  },
+)
 </script>

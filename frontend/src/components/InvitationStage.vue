@@ -1,5 +1,5 @@
 <template>
-  <div class="stage" :style="themeStyle">
+  <div class="stage" :class="{ 'stage-hold': paused }" :style="themeStyle">
     <!-- Fon -->
     <div class="amb amb-orbs"></div>
     <div
@@ -9,23 +9,23 @@
       :class="`amb-${a}`"
     ></div>
 
-    <!-- Harakatli effektlar -->
-    <ParticleCanvas :effects="canvasEffects" :palette="theme.palette" />
+    <!-- Harakatli effektlar (bitta canvas — burst ham shu yerda) -->
+    <ParticleCanvas :effects="canvasEffects" :palette="theme.palette" :paused="paused" />
 
     <!-- Kontent -->
     <div class="stage-content" :class="cardClass">
       <p class="st-salute">
-        <AnimatedText :text="data.to_name" :anim="data.text_anim" :delay="120" />
+        <AnimatedText :text="data.to_name" :anim="data.text_anim" :delay="120" :active="!paused" />
       </p>
 
       <h1 class="st-names">
-        <AnimatedText :text="fullName" :anim="data.text_anim" :delay="320" />
+        <AnimatedText :text="fullName" :anim="data.text_anim" :delay="320" :active="!paused" />
       </h1>
 
       <div class="st-divider">❦</div>
 
       <p class="st-from">
-        <AnimatedText :text="`— ${data.from_name} —`" :anim="data.text_anim" :delay="520" />
+        <AnimatedText :text="`— ${data.from_name} —`" :anim="data.text_anim" :delay="520" :active="!paused" />
       </p>
 
       <div v-if="texts.length" class="st-texts">
@@ -37,38 +37,41 @@
           :text="t"
           :anim="data.text_anim"
           :delay="650 + i * 260"
+          :active="!paused"
         />
       </div>
 
       <div class="st-when">
         <p class="st-date">
-          <AnimatedText :text="dateLabel" :anim="data.text_anim" :delay="1000" />
+          <AnimatedText :text="dateLabel" :anim="data.text_anim" :delay="1000" :active="!paused" />
         </p>
         <p v-if="data.place" class="st-place"><AppIcon name="ph:map-pin" /> {{ data.place }}</p>
       </div>
 
       <Countdown :target="data.event_at" @finish="celebrate" />
 
-      <p class="st-foot">Kod · {{ pretty }}</p>
+      <p v-if="showCode" class="st-foot">{{ t('stage.codeFoot') }}{{ pretty }}</p>
     </div>
 
-    <!-- Tug'ilgan kun / event boshlanganda qo'shimcha zarba -->
-    <template v-if="burst">
-      <ParticleCanvas :effects="['confetti', 'fireworks']" :palette="theme.palette" />
-    </template>
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onBeforeUnmount } from 'vue'
 import ParticleCanvas from './ParticleCanvas.vue'
 import AppIcon from './AppIcon.vue'
 import Countdown from './Countdown.vue'
 import AnimatedText from './AnimatedText.vue'
-import { formatDateUz, themeById, prettyCode } from '../data/catalog.js'
+import { themeById, prettyCode } from '../data/catalog.js'
+import { useI18n, formatDate } from '../i18n/index.js'
+
+const { t } = useI18n()
 
 const props = defineProps({
   data: { type: Object, required: true },
+  /* Konvert pardazi ochilguncha taklifnoma animatsiyalari (CSS + canvas)
+     pauzada turadi — keyin qayta mount qilmasdan davom etadi. */
+  paused: { type: Boolean, default: false },
 })
 
 const burst = ref(false)
@@ -89,22 +92,44 @@ const themeStyle = computed(() => {
 })
 
 const ambientIds = computed(() => (props.data.ambient_effects || []).filter((a) => typeof a === 'string'))
-const canvasEffects = computed(() => props.data.particle_effects || [])
 const texts = computed(() => (props.data.texts || []).slice(0, 6))
 
-const fullName = computed(() =>
-  [props.data.first_name, props.data.last_name].filter(Boolean).join(' ') || 'Taklifnoma',
+/* Bitta canvas: asosiy effektlar + bayram boshlanganda qo'shimcha zarba.
+   Ilgari ikkinchi canvas ochilardi — ikki RAF loop va ikki marta to'liq
+   clearRect. Endi hammasi bitta loopda, ko'rinishi bir xil. */
+const canvasEffects = computed(() => {
+  const base = (props.data.particle_effects || []).filter((e) => typeof e === 'string')
+  if (!burst.value) return base
+  return [...new Set([...base, 'confetti', 'fireworks'])]
+})
+
+const fullName = computed(
+  () =>
+    [props.data.first_name, props.data.last_name].filter(Boolean).join(' ') || t('stage.fallbackName'),
 )
 
-const dateLabel = computed(() => formatDateUz(props.data.event_at))
+const dateLabel = computed(() => formatDate(props.data.event_at))
 const pretty = computed(() => prettyCode(props.data.code))
+// Builder'dagi jonli ko'rinishda "PREV-IEW" kabi soxta kod chiqmasin
+const showCode = computed(() => !!props.data.code && props.data.code !== 'PREVIEW')
 
 const cardClass = computed(() => `enter-${props.data.card_anim || 'scaleIn'}`)
 
+let burstTimer = null
+
 function celebrate() {
+  // Konvert pardazi ochilmagan bo'lsa — keyin ko'rinmaydigan zarba bermaymiz
+  if (props.paused) return
   burst.value = true
-  setTimeout(() => {
+  clearTimeout(burstTimer)
+  burstTimer = setTimeout(() => {
     burst.value = false
+    burstTimer = null
   }, 14000)
 }
+
+onBeforeUnmount(() => {
+  clearTimeout(burstTimer)
+  burstTimer = null
+})
 </script>

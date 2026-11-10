@@ -3,15 +3,15 @@
     <!-- Tanlangan matnlar -->
     <div v-if="modelValue.length" class="flex flex-wrap gap-2">
       <span
-        v-for="(t, i) in modelValue"
-        :key="`${i}-${t}`"
-        class="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-3 py-1.5 text-sm text-white slide-down"
+        v-for="(txt, i) in modelValue"
+        :key="`${i}-${txt}`"
+        class="inline-flex min-w-0 max-w-full items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-3 py-1.5 text-sm text-white slide-down"
       >
-        <span class="max-w-[46ch] truncate">{{ t }}</span>
+        <span class="min-w-0 max-w-[46ch] truncate">{{ txt }}</span>
         <button
           type="button"
           class="grid size-5 place-items-center rounded-full bg-white/10 text-xs text-white/70 transition hover:bg-red-400/30 hover:text-white"
-          :aria-label="`O'chirish: ${t}`"
+          :aria-label="`${t('tc.remove')}: ${txt}`"
           @click="remove(i)"
         >
           ✕
@@ -19,7 +19,7 @@
       </span>
     </div>
     <p v-else class="text-sm text-white/45">
-      Hozircha matn yo'q — quyidagi tayyor matnlarni tanlang yoki o'zingiz yozing.
+      {{ t('tc.empty') }}
     </p>
 
     <!-- Qo'shish -->
@@ -29,30 +29,30 @@
         class="field"
         type="text"
         maxlength="160"
-        :placeholder="`O'zingiz yozing... (${modelValue.length}/${max})`"
+        :placeholder="tf('tc.ph', { n: modelValue.length, max: max })"
         :disabled="modelValue.length >= max"
       />
       <button class="btn btn-ghost shrink-0" type="submit" :disabled="!draft.trim() || modelValue.length >= max">
-        + Qo'shish
+        {{ t('tc.add') }}
       </button>
     </form>
 
     <!-- Tayyor (default) matnlar -->
     <div>
-      <span class="lbl">Tayyor matnlar — bosing, qo'shiladi</span>
+      <span class="lbl">{{ t('tc.defLabel') }}</span>
       <div class="flex flex-wrap gap-2">
         <button
-          v-for="t in availableDefaults"
-          :key="t"
+          v-for="txt in availableDefaults"
+          :key="txt"
           type="button"
           class="chip"
           :disabled="modelValue.length >= max"
-          @click="addDefault(t)"
+          @click="addDefault(txt)"
         >
-          + {{ t }}
+          + {{ txt }}
         </button>
         <span v-if="!availableDefaults.length" class="inline-flex items-center gap-1.5 text-sm text-white/40">
-          <AppIcon name="ph:sparkle" /> Barcha tayyor matnlar tanlandi
+          <AppIcon name="ph:sparkle" /> {{ t('tc.allPicked') }}
         </span>
       </div>
     </div>
@@ -62,7 +62,10 @@
 <script setup>
 import { ref, computed } from 'vue'
 import AppIcon from './AppIcon.vue'
-import { DEFAULT_TEXTS, MAX_TEXTS } from '../data/catalog.js'
+import { MAX_TEXTS } from '../data/catalog.js'
+import { useI18n } from '../i18n/index.js'
+
+const { t, tf } = useI18n()
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },
@@ -75,7 +78,7 @@ const emit = defineEmits(['update:modelValue'])
 const draft = ref('')
 
 const defaultPool = computed(() =>
-  Array.isArray(props.defaults) && props.defaults.length ? props.defaults : DEFAULT_TEXTS,
+  Array.isArray(props.defaults) && props.defaults.length ? props.defaults : t('defaultTexts'),
 )
 
 const availableDefaults = computed(() => defaultPool.value.filter((t) => !props.modelValue.includes(t)))

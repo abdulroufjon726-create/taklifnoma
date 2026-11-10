@@ -48,8 +48,8 @@ Django API bilan birga frontend'ning `index.html` va `assets/` fayllarini ham be
 
 | Qatlam   | Xizmat  | Holat |
 | -------- | ------- | ----- |
-| Frontend | Vercel  | ✅ https://frontend-six-sandy-34.vercel.app |
-| Backend  | Render  | `render.yaml` blueprint tayyor |
+| Frontend | Vercel  | ✅ https://taklifnoma-007.vercel.app |
+| Backend  | Render  | ✅ https://taklifnoma-1.onrender.com |
 | Repo     | GitHub (private) | https://github.com/abdulroufjon726-create/taklifnoma |
 
 ### Backend → Render (blueprint)
@@ -58,31 +58,48 @@ Django API bilan birga frontend'ning `index.html` va `assets/` fayllarini ham be
 2. `abdulroufjon726-create/taklifnoma` repo'ni tanlang (GitHub ulanishi so'raladi)
 3. `render.yaml` avtomatik o'qiladi: Python xizmati, `migrate` + `collectstatic` +
    `gunicorn` — hech narsa qo'lda sozlash shart emas
-4. Xizmat nomi **taklifnoma-api** → URL `https://taklifnoma-api.onrender.com`
-   bo'ladi (frontend `vercel.json` shu yerni kutadi)
+4. Xizmat URL'i: **https://taklifnoma-1.onrender.com**
+   (`frontend/vercel.json` va `frontend/src/api.js` shu manzilga sozlangan)
 
 Render env variantlari (xizmat → Environment):
 
 - `DJANGO_SECRET_KEY` — blueprint avtomatik generatsiya qiladi
-- `DJANGO_CORS_ORIGINS` — agar to'g'ridan-to'g'ri API ulansa: `https://frontend-six-sandy-34.vercel.app`
-- `DATABASE_URL` — ixtiyoriy: Postgres (Neon/Supabase bepul) ulasangiz saqlanadi;
-  o'zgarmasa — SQLite (har bir redeploy'da ma'lumot yangilanadi)
+- `DJANGO_ALLOWED_HOSTS` — `taklifnoma-1.onrender.com,.onrender.com`
+- `DJANGO_CORS_ORIGINS` — agar aniq domenga qisqartirilsa: `https://taklifnoma-007.vercel.app`
+  (hozir bo'sh → hamma manzilga ruxsat, ochiq API kod orqali himoyalangan)
+- `DATABASE_URL` — **tavsiya etiladi**: Postgres (Neon/Supabase bepul) ulasangiz
+  taklifnomalar restartdan keyin ham saqlanadi; bo'sh bo'lsa SQLite ishlaydi, lekin
+  u vaqtinchalik (redeploy'da o'chadi)
+
+> Servis har ko'tarilishida `python manage.py migrate --noinput` bajariladi;
+> qo'shimcha himoya sifatida `config/wsgi.py` bo'sh bazani aniqlab, migratsiyani
+> o'zi ham qo'llaydi (Docker/`start.sh` bilan ishga tushganda ham). Shu tufayli
+> bo'sh baza bilan API 500 bermaydi. Tirikligini `GET /api/health/` orqali
+> tekshirish mumkin. Kerak bo'lsa `DJANGO_AUTO_MIGRATE=0` bilan o'chiriladi.
 
 ### Frontend → Vercel
+
+Loyiha nomi **taklifnoma**, asosiy domen **taklifnoma-007.vercel.app**.
 
 ```bash
 cd frontend
 vercel deploy --prod --yes
 ```
 
-`vercel.json` ikkita rewrite beradi: `/api/*` → Render backend (proksi) va
-barcha yo'llar → `index.html` (SPA history mode). API manzilini
-`VITE_API_BASE_URL` bilan to'g'ridan-to'g'ri ham qo'yish mumkin (CORS kerak bo'ladi).
+`vercel.json` build paytida `VITE_API_BASE_URL` ni Render backend manziliga
+o'rnatadi — frontend API'ga **to'g'ridan-to'g'ri** (CORS ochiq) ulanadi,
+`/api` proksisiz. Env o'rnatilmasa ham `src/api.js` dagi zaxira manzil
+ishlatiladi. Barcha yo'llar → `index.html` (SPA history mode).
+
+> **Izoh:** agar `vercel deploy` `readyState: BLOCKED` bilan tugasa, bu git
+> kontekstidagi deploy bilan bog'liq muammo — frontend'ni `.git`'siz katalogdan
+> (masalan `git archive` yoki nusxa orqali) deploy qiling: ishlagan usul.
 
 ## API
 
 | Metod | Endpoint                  | Vazifasi                                          |
 | ----- | ------------------------- | ------------------------------------------------- |
+| GET   | `/api/health/`            | Servis va baza holati (`200 ok` / `503`)           |
 | POST  | `/api/invitations/`       | Yangi taklifnoma yasash → `{code: "XXXXXXXX"}`    |
 | GET   | `/api/invitations/<code>/`| Kod bo'yicha taklifnomani olish (katta-kichik farqsiz) |
 
