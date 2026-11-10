@@ -21,6 +21,12 @@ tailscale --socket=/var/run/tailscale/tailscaled.sock up \
   --auth-key="$TS_AUTHKEY" \
   --hostname=render-taklifnoma
 
+echo "=== TAILSCALE STATUS ==="
+tailscale --socket=/var/run/tailscale/tailscaled.sock status
+
+echo "=== TAILSCALE IPv4 ==="
+tailscale --socket=/var/run/tailscale/tailscaled.sock ip -4
+
 # PostgreSQL TCP ko'prigi
 gost \
   -L=tcp://127.0.0.1:15432/100.66.226.26:5432 \
