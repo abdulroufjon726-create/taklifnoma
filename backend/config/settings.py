@@ -89,19 +89,35 @@ WSGI_APPLICATION = "config.wsgi.application"
 # DATABASE_URL (masalan Render/Neon Postgres) berilsa — Postgres, aks holda SQLite
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 if DATABASE_URL.startswith(("postgres://", "postgresql://")):
-    from urllib.parse import urlparse
+    from urllib.parse import parse_qs, unquote, urlparse
 
     _db = urlparse(DATABASE_URL)
+    _query = parse_qs(_db.query)
+    # sslmode'ni majburan "require" qilmaymiz: Tailscale/GOST orqali ulangan
+    # lokal Postgres SSL'ni qo'llab-quvvatlamasligi mumkin (aqlli standart —
+    # psycopg'ning "prefer"i: imkon bo'lsa SSL, bo'lmasa oddiy ulanish).
+    # Agar URL'da ?sslmode=... berilgan bo'lsa — aynan o'shanisi ishlatiladi.
+    _db_options = {}
+    if "sslmode" in _query and _query["sslmode"]:
+        _db_options["sslmode"] = _query["sslmode"][0]
+    elif _db.hostname not in ("127.0.0.1", "localhost", "::1", None):
+        _db_options["sslmode"] = "require"
+    # Osilib qolmasin: baza yopiq bo'lsa health-check 5 soniyada javob beradi
+    try:
+        _db_options["connect_timeout"] = max(1, int(os.environ.get("DJANGO_DB_CONNECT_TIMEOUT", "5")))
+    except ValueError:
+        _db_options["connect_timeout"] = 5
+
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": _db.path.lstrip("/"),
-            "USER": _db.username or "",
-            "PASSWORD": _db.password or "",
+            "NAME": unquote(_db.path.lstrip("/")),
+            "USER": unquote(_db.username or ""),
+            "PASSWORD": unquote(_db.password or ""),
             "HOST": _db.hostname or "",
             "PORT": str(_db.port or 5432),
             "CONN_MAX_AGE": 60,
-            "OPTIONS": {"sslmode": "require"},
+            "OPTIONS": _db_options,
         }
     }
 else:
