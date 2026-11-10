@@ -19,13 +19,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl -fsSL https://tailscale.com/install.sh | sh
 
 
-# GOST o'rnatish
-RUN curl -fsSL https://github.com/go-gost/gost/raw/master/install.sh \
-    -o /tmp/gost-install.sh \
-    && bash /tmp/gost-install.sh --install \
-    && command -v gost \
+
+# GOST 3.3.2 o'rnatish
+RUN curl -fL \
+    https://github.com/go-gost/gost/releases/download/v3.3.2/gost_3.3.2_linux_amd64.tar.gz \
+    -o /tmp/gost.tar.gz \
+    && tar -tzf /tmp/gost.tar.gz \
+    && tar -xzf /tmp/gost.tar.gz -C /usr/local/bin gost \
+    && chmod +x /usr/local/bin/gost \
     && gost -V \
-    && rm /tmp/gost-install.sh
+    && rm /tmp/gost.tar.gz
+
 
 
 # Python kutubxonalarini o'rnatish
