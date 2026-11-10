@@ -18,10 +18,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Tailscale o'rnatish
 RUN curl -fsSL https://tailscale.com/install.sh | sh
 
+
 # GOST o'rnatish
-RUN bash <(curl -fsSL https://github.com/go-gost/gost/raw/master/install.sh) --install \
+RUN curl -fsSL https://github.com/go-gost/gost/raw/master/install.sh \
+    -o /tmp/gost-install.sh \
+    && bash /tmp/gost-install.sh --install \
     && command -v gost \
-    && gost -V
+    && gost -V \
+    && rm /tmp/gost-install.sh
+
 
 # Python kutubxonalarini o'rnatish
 COPY requirements.txt .
