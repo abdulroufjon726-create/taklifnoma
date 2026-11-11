@@ -47,12 +47,20 @@ def _ensure_schema() -> None:
             break
 
     try:
+        from django.conf import settings
         from django.core.management import call_command
 
         call_command("migrate", interactive=False, verbosity=0)
         logger.warning("Database migrations applied")
-    except Exception:
+        settings.MIGRATION_ERROR = ""
+    except Exception as exc:
         logger.exception("Automatic migration failed")
+        try:
+            from django.conf import settings
+
+            settings.MIGRATION_ERROR = str(exc).replace("\n", " ")[:300]
+        except Exception:
+            pass
     finally:
         if fd is not None:
             os.close(fd)
