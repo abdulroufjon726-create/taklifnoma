@@ -88,6 +88,43 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # DATABASE_URL (masalan Render/Neon Postgres) berilsa — Postgres, aks holda SQLite
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+# Postgres vaqtincha yetib bo'lmasa (Tailscale tunnel yopiq, baza o'chgan) API
+# butunlay 500 bo'lib qolmasin — SQLite'ga qaytamiz va buni health'da ko'rsatamiz.
+DB_FALLBACK_REASON = ""
+
+
+def _sqlite_database():
+    return {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+
+
+def _postgres_reachable(cfg, timeout=5):
+    """Baza haqiqatan ochiladimi — bir marta, qisqa timeout bilan tekshiramiz."""
+    try:
+        import psycopg
+    except Exception as exc:  # psycopg o'rnatilmagan
+        return False, f"psycopg: {exc}"
+    options = cfg.get("OPTIONS") or {}
+    try:
+        conn = psycopg.connect(
+            host=cfg.get("HOST") or "",
+            port=cfg.get("PORT") or "5432",
+            dbname=cfg.get("NAME") or "",
+            user=cfg.get("USER") or "",
+            password=cfg.get("PASSWORD") or "",
+            connect_timeout=max(1, int(timeout)),
+            sslmode=options.get("sslmode", "prefer"),
+        )
+        conn.close()
+        return True, ""
+    except Exception as exc:
+        return False, str(exc).replace("\n", " ")[:300]
+
+
 if DATABASE_URL.startswith(("postgres://", "postgresql://")):
     from urllib.parse import parse_qs, unquote, urlparse
 
@@ -108,25 +145,33 @@ if DATABASE_URL.startswith(("postgres://", "postgresql://")):
     except ValueError:
         _db_options["connect_timeout"] = 5
 
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": unquote(_db.path.lstrip("/")),
-            "USER": unquote(_db.username or ""),
-            "PASSWORD": unquote(_db.password or ""),
-            "HOST": _db.hostname or "",
-            "PORT": str(_db.port or 5432),
-            "CONN_MAX_AGE": 60,
-            "OPTIONS": _db_options,
-        }
+    _pg = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": unquote(_db.path.lstrip("/")),
+        "USER": unquote(_db.username or ""),
+        "PASSWORD": unquote(_db.password or ""),
+        "HOST": _db.hostname or "",
+        "PORT": str(_db.port or 5432),
+        "CONN_MAX_AGE": 60,
+        "OPTIONS": _db_options,
     }
+
+    if os.environ.get("DJANGO_DB_FALLBACK", "1") == "1":
+        _ok, _why = _postgres_reachable(_pg)
+        if _ok:
+            DATABASES = {"default": _pg}
+        else:
+            DB_FALLBACK_REASON = _why
+            import logging as _logging
+
+            _logging.getLogger("config.settings").warning(
+                "Postgres unreachable (%s) - using SQLite fallback", _why
+            )
+            DATABASES = _sqlite_database()
+    else:
+        DATABASES = {"default": _pg}
 else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+    DATABASES = _sqlite_database()
 
 # Render kabi proxy ortida HTTPS'ni to'g'ri aniqlash uchun
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

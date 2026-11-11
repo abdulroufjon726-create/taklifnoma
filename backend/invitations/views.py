@@ -1,5 +1,6 @@
 import logging
 
+from django.conf import settings
 from django.db import connection
 from django.db.models import F
 from rest_framework import status
@@ -18,14 +19,23 @@ logger = logging.getLogger(__name__)
 @permission_classes([AllowAny])
 def health(request):
     """Yengil health-check: servis va baza tirikmi (Render health probe)."""
+    engine = str(settings.DATABASES["default"].get("ENGINE", "")).rsplit(".", 1)[-1]
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
             cursor.fetchone()
     except Exception:
         logger.exception("Health check failed")
-        return Response({"status": "error", "database": "down"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-    return Response({"status": "ok"})
+        return Response(
+            {"status": "error", "database": "down", "engine": engine},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    body = {"status": "ok", "database": "ok", "engine": engine}
+    fallback = getattr(settings, "DB_FALLBACK_REASON", "")
+    if fallback:
+        body["fallback"] = True
+        body["fallback_reason"] = fallback
+    return Response(body)
 
 
 @api_view(["POST"])
