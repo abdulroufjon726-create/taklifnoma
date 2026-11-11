@@ -15,6 +15,7 @@ Sxema allaqachon mavjud bo'lsa, bu tekshiruv bir yengil so'rov bilan tugaydi.
 import logging
 import os
 import tempfile
+import time
 from pathlib import Path
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
@@ -23,35 +24,33 @@ logger = logging.getLogger("config.wsgi")
 
 
 def _ensure_schema() -> None:
-    """Jadval yo'q bo'lsa — migratsiyalarni qo'llaydi."""
+    """Migratsiyalarni qo'llaydi (bo'sh baza ham, eskirgan sxema ham)."""
     if os.environ.get("DJANGO_AUTO_MIGRATE", "1") != "1":
         return
 
-    try:
-        from django.db import connection
-
-        existing = set(connection.introspection.table_names())
-    except Exception:
-        logger.exception("Schema check failed")
-        return
-
-    if "invitations_invitation" in existing:
-        return
-
     lock_path = Path(tempfile.gettempdir()) / "taklifnoma-migrate.lock"
-    try:
-        fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-    except FileExistsError:
-        # Boshqa worker allaqachon migrate qilmoqda
-        return
-    except OSError:
-        fd = None
+    tried = 0
+    while tried < 3:
+        try:
+            fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            break
+        except FileExistsError:
+            # Boshqa worker migrate qilmoqda — tugashini kutamiz
+            if tried == 0:
+                logger.warning("Waiting for another worker's migrations")
+            tried += 1
+            time.sleep(1)
+            if tried == 3:
+                return
+        except OSError:
+            fd = None
+            break
 
     try:
         from django.core.management import call_command
 
-        logger.warning("Empty database detected - applying migrations")
         call_command("migrate", interactive=False, verbosity=0)
+        logger.warning("Database migrations applied")
     except Exception:
         logger.exception("Automatic migration failed")
     finally:
