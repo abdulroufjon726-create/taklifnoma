@@ -65,6 +65,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "config.dbswitch.PostgresRecoveryMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -91,6 +92,13 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 # Postgres vaqtincha yetib bo'lmasa (Tailscale tunnel yopiq, baza o'chgan) API
 # butunlay 500 bo'lib qolmasin — SQLite'ga qaytamiz va buni health'da ko'rsatamiz.
 DB_FALLBACK_REASON = ""
+
+
+POSTGRES_DB_CONFIG = None
+SQLITE_DB_CONFIG = {
+    "ENGINE": "django.db.backends.sqlite3",
+    "NAME": BASE_DIR / "db.sqlite3",
+}
 
 
 def _sqlite_database():
@@ -155,6 +163,9 @@ if DATABASE_URL.startswith(("postgres://", "postgresql://")):
         "CONN_MAX_AGE": 60,
         "OPTIONS": _db_options,
     }
+    # Eslatma: bu sozlamalar Postgres qaytganda avtomatik almashish uchun
+    # config/dbswitch.py tomonidan ishlatiladi.
+    POSTGRES_DB_CONFIG = _pg
 
     if os.environ.get("DJANGO_DB_FALLBACK", "1") == "1":
         _ok, _why = _postgres_reachable(_pg)
