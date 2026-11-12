@@ -14,17 +14,17 @@
 
     <!-- Kontent -->
     <div class="stage-content" :class="cardClass">
-      <p class="st-salute">
+      <p class="st-salute" :style="fontStyle('salute', 'var(--font-script)')">
         <AnimatedText :text="data.to_name" :anim="data.text_anim" :delay="120" :active="!paused" />
       </p>
 
-      <h1 class="st-names">
+      <h1 class="st-names" :style="fontStyle('names', 'var(--font-display)')">
         <AnimatedText :text="fullName" :anim="data.text_anim" :delay="320" :active="!paused" />
       </h1>
 
       <div class="st-divider">❦</div>
 
-      <p class="st-from">
+      <p class="st-from" :style="fontStyle('from', 'var(--font-body)')">
         <AnimatedText :text="`— ${data.from_name} —`" :anim="data.text_anim" :delay="520" :active="!paused" />
       </p>
 
@@ -38,6 +38,7 @@
           :anim="data.text_anim"
           :delay="650 + i * 260"
           :active="!paused"
+          :style="textFontStyle(i)"
         />
       </div>
 
@@ -62,7 +63,7 @@ import ParticleCanvas from './ParticleCanvas.vue'
 import AppIcon from './AppIcon.vue'
 import Countdown from './Countdown.vue'
 import AnimatedText from './AnimatedText.vue'
-import { themeById, prettyCode } from '../data/catalog.js'
+import { themeById, prettyCode, fontStack } from '../data/catalog.js'
 import { useI18n, formatDate } from '../i18n/index.js'
 
 const { t } = useI18n()
@@ -93,6 +94,19 @@ const themeStyle = computed(() => {
 
 const ambientIds = computed(() => (props.data.ambient_effects || []).filter((a) => typeof a === 'string'))
 const texts = computed(() => (props.data.texts || []).slice(0, 6))
+
+/* Har bir matn uchun alohida shrift (fonts JSON) */
+const chosenFonts = computed(() => props.data.fonts || {})
+
+function fontStyle(key, fallback) {
+  const stack = fontStack(chosenFonts.value[key])
+  return { fontFamily: stack || fallback }
+}
+
+function textFontStyle(index) {
+  const stack = fontStack((chosenFonts.value.texts || [])[index])
+  return stack ? { fontFamily: stack } : {}
+}
 
 /* Bitta canvas: asosiy effektlar + bayram boshlanganda qo'shimcha zarba.
    Ilgari ikkinchi canvas ochilardi — ikki RAF loop va ikki marta to'liq

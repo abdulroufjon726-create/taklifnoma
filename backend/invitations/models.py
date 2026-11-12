@@ -7,6 +7,11 @@ CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 CODE_LENGTH = 8
 
 
+def generate_edit_key() -> str:
+    """Tahrirlash kaliti — kodni bilgan mehmon taklifnomani o'zgartira olmasin."""
+    return secrets.token_urlsafe(24)
+
+
 def generate_code() -> str:
     """Generate a unique, human-friendly invitation code."""
     while True:
@@ -53,6 +58,11 @@ class Invitation(models.Model):
     card_anim = models.CharField(max_length=30, default="scaleIn")
 
     texts = models.JSONField(default=list, blank=True)  # selected default + custom texts
+    # Har bir matn uchun shrift: {"salute": id, "names": id, "from": id, "texts": [id, ...]}
+    fonts = models.JSONField(default=dict, blank=True)
+
+    # Faqat yaratuvchida saqlanadi; taklifnomani tahrirlash uchun talab qilinadi
+    edit_key = models.CharField(max_length=43, unique=True, default=generate_edit_key, editable=False)
 
     views = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)

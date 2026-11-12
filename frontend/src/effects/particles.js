@@ -475,6 +475,16 @@ export function createParticleEngine(canvas) {
   let palette = ['#ffffff']
   let density = 1
   let pendingResize = 0
+
+  /* Past darajali telefonlar: kam yadro/xotira — DPR va zarracha sonini
+     kamaytiramiz, FPS tushsa yana avtomatik pasaytiradi (budget). */
+  const nav = typeof navigator !== 'undefined' ? navigator : {}
+  const lowEnd =
+    (nav.hardwareConcurrency || 8) <= 4 ||
+    (nav.deviceMemory || 8) <= 4 ||
+    (typeof window !== 'undefined' && window.innerWidth < 430)
+  let budget = lowEnd ? 0.55 : 1
+  let emaDt = 1 / 60
   const systems = new Map()
 
   const reduceMotion =
@@ -495,7 +505,7 @@ export function createParticleEngine(canvas) {
 
     // Piksel byudjeti: katta ekranlarda DPR'ni 2dan pastga tushiramiz,
     // shunda to'ldirish (fill-rate) telefonda ham og'ir bo'lmaydi.
-    let dpr = Math.min(window.devicePixelRatio || 1, 2)
+    let dpr = Math.min(window.devicePixelRatio || 1, lowEnd ? 1.5 : 2)
     const maxPixels = 2.6e6
     if (w * h * dpr * dpr > maxPixels) {
       dpr = Math.max(1, Math.sqrt(maxPixels / (w * h)))
@@ -550,6 +560,11 @@ export function createParticleEngine(canvas) {
     const dt = Math.min(0.05, Math.max(0.001, (ts - last) / 1000 || 0.016))
     last = ts
 
+    // Moslashuvchan sifat: kadr vaqti oshsa zarracha byudjetini kamaytiramiz
+    emaDt = emaDt * 0.9 + dt * 0.1
+    if (emaDt > 0.024 && budget > 0.35) budget = Math.max(0.35, budget - 0.02)
+    else if (emaDt < 0.018 && budget < 1) budget = Math.min(1, budget + 0.015)
+
     if (!systems.size) return
     if (!w || !h) {
       applyResize()
@@ -559,13 +574,13 @@ export function createParticleEngine(canvas) {
     ctx.clearRect(0, 0, w, h)
 
     // Global byudjet: bir vaqtda juda ko'p zarracha chizilmasin
-    const totalCap = Math.round(420 * Math.min(1, 0.55 + density * 0.45))
+    const totalCap = Math.round(380 * Math.min(1, 0.55 + density * 0.45) * budget)
     let total = 0
 
     for (const sys of systems.values()) {
       const def = sys.def
-      const cap = Math.max(12, Math.round((def.max || 150) * Math.min(1, 0.5 + density * 0.5)))
-      sys.acc += dt * def.rate * density
+      const cap = Math.max(10, Math.round((def.max || 150) * Math.min(1, 0.5 + density * 0.5) * budget))
+      sys.acc += dt * def.rate * density * budget
 
       let guard = 0
       while (sys.acc >= 1 && guard++ < 24) {
@@ -616,6 +631,7 @@ export function createParticleEngine(canvas) {
     start() {
       if (started || reduceMotion) return
       started = true
+      if (lowEnd) budget = Math.min(budget, 0.65)
       resize(true)
       last = performance.now()
       raf = requestAnimationFrame(frame)

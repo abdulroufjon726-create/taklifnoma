@@ -542,7 +542,8 @@ input[type="time"].field {
   content: "";
   position: absolute;
   border-radius: 50%;
-  filter: blur(60px);
+  /* radial-gradient o'zi yumshoq — katta blur shart emas (mobil GPU tejaydi) */
+  filter: blur(34px);
   opacity: 0.45;
   background: radial-gradient(circle, var(--accent, #f5c451), transparent 70%);
 }
@@ -577,7 +578,7 @@ input[type="time"].field {
   background:
     radial-gradient(85% 120% at 22% 100%, color-mix(in srgb, var(--accent, #f5c451) 34%, transparent), transparent 62%),
     radial-gradient(75% 110% at 74% 100%, color-mix(in srgb, var(--accent2, #e879f9) 26%, transparent), transparent 60%);
-  filter: blur(26px);
+  filter: blur(16px);
   opacity: 0.6;
   animation: waveMove 8s ease-in-out infinite alternate;
 }
@@ -624,7 +625,7 @@ input[type="time"].field {
     radial-gradient(45% 35% at 30% 60%, rgba(255, 255, 255, 0.12), transparent 70%),
     radial-gradient(40% 32% at 70% 40%, color-mix(in srgb, var(--accent, #f5c451) 14%, transparent), transparent 70%),
     radial-gradient(50% 40% at 55% 85%, rgba(255, 255, 255, 0.08), transparent 70%);
-  filter: blur(30px);
+  filter: blur(18px);
   opacity: 0.75;
   animation: smokeDrift 20s ease-in-out infinite alternate;
 }
@@ -1471,20 +1472,36 @@ input[type="time"].field {
     filter: blur(46px);
   }
   .amb-aurora {
-    filter: blur(38px);
+    filter: blur(30px);
   }
   .amb-waves {
-    filter: blur(18px);
+    filter: blur(12px);
   }
   .amb-bokeh {
-    filter: blur(4px);
+    filter: blur(3px);
   }
   .amb-smoke {
-    filter: blur(20px);
+    filter: blur(14px);
   }
   .amb-orbs::before,
   .amb-orbs::after {
-    filter: blur(42px);
+    filter: blur(26px);
+  }
+}
+
+/* Kichik telefonlar: matn soyasi va eng og'ir fon qatlamlarini yengillashtirish */
+@media (max-width: 480px) {
+  .st-names {
+    text-shadow:
+      0 0 18px color-mix(in srgb, var(--accent, #f5c451) 55%, transparent),
+      0 3px 14px rgba(0, 0, 0, 0.45);
+  }
+  .st-salute {
+    text-shadow: 0 0 16px color-mix(in srgb, var(--accent, #f5c451) 45%, transparent);
+  }
+  .amb-spotlight,
+  .amb-rays {
+    animation-duration: 32s;
   }
 }
 

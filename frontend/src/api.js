@@ -80,6 +80,7 @@ async function parse(res) {
   return data
 }
 
+
 /* ---- Kesh: bitta taklifnoma ikki marta so'ralmasin -------------------- */
 const CACHE_TTL = 5 * 60 * 1000
 const CACHE_MAX = 24
@@ -109,9 +110,35 @@ function cacheSet(data) {
   }
 }
 
+/* ---- Doimiy kesh: havola qayta ochilganda darhol ko'rinadi ------------- */
+const LS_TTL = 24 * 60 * 60 * 1000
+const LS_PREFIX = 'taklifnoma:inv:'
+
+function lsGet(code) {
+  try {
+    const raw = localStorage.getItem(LS_PREFIX + code)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed || !parsed.data || Date.now() - parsed.at > LS_TTL) return null
+    return parsed.data
+  } catch {
+    return null
+  }
+}
+
+function lsSet(data) {
+  if (!data || !data.code) return
+  try {
+    localStorage.setItem(LS_PREFIX + data.code, JSON.stringify({ data, at: Date.now() }))
+  } catch {
+    /* xotira to'lgan bo'lsa jim o'tamiz */
+  }
+}
+
 /** Kod bo'yicha keshdagi taklifnoma (bo'lsa — tarmoqsiz ochiladi). */
 export function getCachedInvitation(code) {
-  return cacheGet(normalizeCode(code))
+  const clean = normalizeCode(code)
+  return cacheGet(clean) || lsGet(clean)
 }
 
 export async function createInvitation(payload) {
@@ -168,6 +195,36 @@ export async function fetchInvitation(code, { fresh = false } = {}) {
 
   const data = await parse(res)
   cacheSet(data)
+  lsSet(data)
+  return data
+}
+
+/**
+ * Mavjud taklifnomani tahrirlash (faqat yaratuvchida saqlangan kalit bilan).
+ * Kalit serverga X-Edit-Key sarlavhasi orqali yuboriladi.
+ */
+export async function updateInvitation(code, editKey, payload) {
+  const clean = normalizeCode(code)
+  if (!clean) throw Object.assign(new Error('Kod kiritilmagan'), { status: 404 })
+  let res
+  try {
+    res = await request(`/api/invitations/${encodeURIComponent(clean)}/`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-Edit-Key': editKey },
+      body: JSON.stringify(payload),
+    })
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      const err = new Error('Server javob bermadi. Bir ozdan so‘ng qayta urinib ko‘ring.')
+      err.status = 0
+      err.code = 'timeout'
+      throw err
+    }
+    throw networkError(e)
+  }
+  const data = await parse(res)
+  cacheSet(data)
+  lsSet(data)
   return data
 }
 

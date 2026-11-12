@@ -23,6 +23,21 @@ const uz = {
     sec3: "Taklifnoma so'zlari",
     sec4: 'Dizayn temasi',
     sec5: 'Effekt va animatsiyalar',
+    sec6: 'Shriftlar',
+    fontSalute: 'Salomlashuv shrifti',
+    fontNames: 'Ismlar shrifti',
+    fontFrom: 'Kimdan shrifti',
+    textFonts: 'Har bir matn shrifti',
+    mineTitle: 'Mening taklifnomalarim',
+    edit: 'Tahrirlash',
+    open: 'Ochish',
+    editNoKey:
+      "Bu qurilmada tahrirlash kaliti topilmadi — taklifnoma faqat yaratilgan qurilmada tahrirlanadi.",
+    saveBtn: "O'zgarishlarni saqlash",
+    updatedTitle: 'Taklifnoma yangilandi',
+    updatedSub: "O'zgarishlar saqlandi — havola va kod o'sha-o'sha.",
+    editingNow: 'Tahrirlanmoqda',
+    cancelEdit: 'Tahrirni bekor qilish',
 
     catLabel: "Bayram / tadbir turi — bosganingizda tayyor dizayn qo'llanadi",
     hintDefault: "O'z uslubingizni tanlang",
@@ -131,6 +146,7 @@ const uz = {
 
   inv: {
     loading: 'Taklifnoma yuklanmoqda...',
+    waking: "Server uyg'onmoqda — bir necha soniya olishi mumkin.",
     nfTitle: 'Taklifnoma topilmadi',
     nfCode: 'Kod',
     nfB: " bo'yicha taklifnoma mavjud emas. Kodni tekshiring yoki uni yasagan odamdan qayta so'rang.",
@@ -330,6 +346,21 @@ const ru = {
     sec3: 'Текст приглашения',
     sec4: 'Тема оформления',
     sec5: 'Эффекты и анимации',
+    sec6: 'Шрифты',
+    fontSalute: 'Шрифт приветствия',
+    fontNames: 'Шрифт имён',
+    fontFrom: 'Шрифт «от кого»',
+    textFonts: 'Шрифт каждого текста',
+    mineTitle: 'Мои приглашения',
+    edit: 'Редактировать',
+    open: 'Открыть',
+    editNoKey:
+      'Ключ редактирования не найден на этом устройстве — приглашение можно менять только там, где оно создано.',
+    saveBtn: 'Сохранить изменения',
+    updatedTitle: 'Приглашение обновлено',
+    updatedSub: 'Изменения сохранены — код и ссылка те же.',
+    editingNow: 'Редактируется',
+    cancelEdit: 'Отменить редактирование',
 
     catLabel: 'Праздник / тип события — при нажатии применяется готовый дизайн',
     hintDefault: 'Выберите свой стиль',
@@ -438,6 +469,7 @@ const ru = {
 
   inv: {
     loading: 'Загрузка приглашения...',
+    waking: 'Сервер просыпается — это может занять несколько секунд.',
     nfTitle: 'Приглашение не найдено',
     nfCode: 'Код',
     nfB:
@@ -638,6 +670,21 @@ const en = {
     sec3: 'Invitation text',
     sec4: 'Design theme',
     sec5: 'Effects & animations',
+    sec6: 'Fonts',
+    fontSalute: 'Greeting font',
+    fontNames: 'Names font',
+    fontFrom: 'Sender font',
+    textFonts: 'Font for each text',
+    mineTitle: 'My invitations',
+    edit: 'Edit',
+    open: 'Open',
+    editNoKey:
+      'The editing key is not on this device — an invitation can only be edited where it was created.',
+    saveBtn: 'Save changes',
+    updatedTitle: 'Invitation updated',
+    updatedSub: 'Changes saved — the code and link stay the same.',
+    editingNow: 'Editing',
+    cancelEdit: 'Cancel editing',
 
     catLabel: 'Holiday / event type — clicking applies a ready-made design',
     hintDefault: 'Choose your own style',
@@ -745,6 +792,7 @@ const en = {
 
   inv: {
     loading: 'Loading invitation...',
+    waking: 'The server is waking up — this can take a few seconds.',
     nfTitle: 'Invitation not found',
     nfCode: 'Code',
     nfB:

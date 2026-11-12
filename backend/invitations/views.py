@@ -1,4 +1,5 @@
 import logging
+import secrets
 
 from django.conf import settings
 from django.db import connection
@@ -52,16 +53,16 @@ def invitation_create(request):
     serializer = InvitationCreateSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     invitation = serializer.save()
-    return Response(
-        InvitationSerializer(invitation).data,
-        status=status.HTTP_201_CREATED,
-    )
+    data = dict(InvitationSerializer(invitation).data)
+    # Tahrirlash kaliti faqat yaratuvchiga qaytariladi (GET'da hech qachon)
+    data["edit_key"] = invitation.edit_key
+    return Response(data, status=status.HTTP_201_CREATED)
 
 
-@api_view(["GET"])
+@api_view(["GET", "PATCH"])
 @permission_classes([AllowAny])
 def invitation_detail(request, code):
-    """Fetch one invitation by its exact code (case-insensitive, dashes ignored)."""
+    """Fetch one invitation by code; PATCH updates it with the edit key."""
     normalized = "".join(ch for ch in code.upper() if ch.isalnum())
     if len(normalized) != 8:
         raise NotFound("Bunday kodli taklifnoma topilmadi.")
@@ -69,6 +70,18 @@ def invitation_detail(request, code):
         invitation = Invitation.objects.get(code=normalized)
     except Invitation.DoesNotExist:
         raise NotFound("Bunday kodli taklifnoma topilmadi.")
+
+    if request.method == "PATCH":
+        key = request.headers.get("X-Edit-Key", "")
+        if not key or not secrets.compare_digest(key, invitation.edit_key):
+            return Response(
+                {"detail": "Tahrirlash kaliti noto'g'ri."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        serializer = InvitationCreateSerializer(invitation, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(InvitationSerializer(invitation).data)
 
     # Atomar oshirish: bir vaqtda ochgan mehmonlar hisobni yo'qotmaydi.
     Invitation.objects.filter(pk=invitation.pk).update(views=F("views") + 1)

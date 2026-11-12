@@ -21,6 +21,7 @@ class InvitationCreateSerializer(serializers.ModelSerializer):
             "text_anim",
             "card_anim",
             "texts",
+            "fonts",
         ]
 
     def validate_first_name(self, value):
@@ -52,6 +53,27 @@ class InvitationCreateSerializer(serializers.ModelSerializer):
                 cleaned.append(item[:300])
         return cleaned
 
+    def validate_fonts(self, value):
+        """Har bir matn uchun shrift tanlovi: {"salute", "names", "from", "texts"}."""
+        if value in (None, ""):
+            return {}
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("Shriftlar obyekt bo'lishi kerak.")
+        allowed = {"cormorant", "playfair", "lora", "montserrat", "vibes"}
+
+        def clean(font_id):
+            return font_id if isinstance(font_id, str) and font_id in allowed else ""
+
+        texts = value.get("texts") or []
+        if not isinstance(texts, list):
+            texts = []
+        return {
+            "salute": clean(value.get("salute")),
+            "names": clean(value.get("names")),
+            "from": clean(value.get("from")),
+            "texts": [clean(t) for t in texts[:20]],
+        }
+
     def validate(self, attrs):
         for key in ("ambient_effects", "particle_effects"):
             value = attrs.get(key) or []
@@ -79,6 +101,7 @@ class InvitationSerializer(serializers.ModelSerializer):
             "text_anim",
             "card_anim",
             "texts",
+            "fonts",
             "views",
             "created_at",
         ]

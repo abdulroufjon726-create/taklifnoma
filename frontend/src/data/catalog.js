@@ -325,6 +325,20 @@ export const CARD_ANIMS = [
   { id: 'elastic', label: 'Elastik', icon: 'ph:arrows-left-right' },
 ]
 
+/* Shriftlar — har bir matn uchun alohida tanlanadi */
+export const FONTS = [
+  { id: 'cormorant', label: 'Cormorant', stack: '"Cormorant Garamond", Georgia, serif' },
+  { id: 'playfair', label: 'Playfair', stack: '"Playfair Display", Georgia, serif' },
+  { id: 'lora', label: 'Lora', stack: '"Lora", Georgia, serif' },
+  { id: 'montserrat', label: 'Montserrat', stack: '"Montserrat", system-ui, sans-serif' },
+  { id: 'vibes', label: 'Great Vibes', stack: '"Great Vibes", cursive' },
+]
+
+export function fontStack(id) {
+  const f = FONTS.find((x) => x.id === id)
+  return f ? f.stack : ''
+}
+
 /* Default (tayyor) matnlar — tanlay qo'shing yoki o'zingiz yozing */
 export const DEFAULT_TEXTS = [
   'Hurmatli mehmonlar!',

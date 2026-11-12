@@ -8,6 +8,9 @@
     <div class="relative flex flex-col items-center gap-5">
       <span class="spinner"></span>
       <p class="text-sm tracking-[0.3em] text-white/55 uppercase">{{ t('inv.loading') }}</p>
+      <p v-if="slowLoading" class="max-w-[26ch] text-center text-xs leading-relaxed text-white/40 fade-in">
+        {{ t('inv.waking') }}
+      </p>
     </div>
   </div>
 
@@ -41,7 +44,7 @@
     <!-- KONVERT: taklifnomadan oldin ochiladigan pardaz -->
     <div v-if="covered"
       class="absolute inset-0 z-30 flex flex-col items-center justify-center gap-7 overflow-hidden bg-ink px-5 text-center"
-      :class="{ 'cover-out': openingAnim, 'cursor-wait': arming }"
+      :class="{ 'cover-out': openingAnim }"
       :style="{
         '--paper-scale': paperScale,
         '--paper-dx': paperDx + 'px',
@@ -144,7 +147,7 @@ const toast = ref('')
 let toastTimer = null
 const covered = ref(false) // konvert pardazi — bosilmaguncha taklifnoma yashirinadi
 const openingAnim = ref(false) // konvert animatsiyasi ketmoqda
-const arming = ref(false) // fullscreen kutilmoqda — animatsiya hali boshlanmagan
+const slowLoading = ref(false) // backend uyg'onishi uzoqqa cho'zildi
 const stageLive = ref(false) // taklifnoma animatsiyalari yoqilgan (pauza ochilgan)
 const paperScale = ref(9) // tekis qog'oz ekranni to'ldirishi uchun masshtab
 const paperDx = ref(0) // qog'oz markazini ekran markaziga surish
@@ -152,6 +155,7 @@ const paperDy = ref(0)
 const paperEl = ref(null)
 let openTimer = null
 let liveTimer = null
+let slowTimer = null
 
 /* Konvert xoreografiyasi (CSS bilan biri-biriga mos bo'lishi shart):
    mum 0.00–0.60 · qopqoq 0.60–1.55 · qog'oz chiqishi 1.50–2.40
@@ -175,12 +179,12 @@ function applyInvitation(data) {
   status.value = 'ok'
   covered.value = true // har bir ochilishda avval konvert
   openingAnim.value = false
-  arming.value = false
   stageLive.value = false
   clearTimeout(openTimer)
   clearTimeout(liveTimer)
+  clearTimeout(slowTimer)
+  slowLoading.value = false
   updateTitle()
-  requestFullscreen()
 }
 
 async function load() {
@@ -188,10 +192,12 @@ async function load() {
   invitation.value = null
   covered.value = false
   openingAnim.value = false
-  arming.value = false
   stageLive.value = false
   clearTimeout(openTimer)
   clearTimeout(liveTimer)
+  clearTimeout(slowTimer)
+  slowLoading.value = false
+  slowTimer = setTimeout(() => (slowLoading.value = true), 4500)
 
   // Kirish sahifasida tekshirilgan taklifnoma keshda bo'ladi — qayta
   // so'rovsiz, darhol konvert ochiladi (ko'rishlar soni ham ikki marta
@@ -205,6 +211,8 @@ async function load() {
   try {
     applyInvitation(await fetchInvitation(route.params.code))
   } catch (e) {
+    clearTimeout(slowTimer)
+    slowLoading.value = false
     if (e.status === 404) status.value = 'missing'
     else {
       status.value = 'error'
@@ -213,57 +221,6 @@ async function load() {
       else errorText.value = e.message || t('inv.errNet')
     }
   }
-}
-
-/* ---- Konvert: AVVAL fullscreen, KEYIN animatsiya ----
-   Fullscreen almashinuvi layout/resize keltiradi. Bu animatsiya paytida
-   yuz bersa kadrlar tushib ketadi — shuning uchun avval fullscreen'ni
-   kutamiz (ruxsat bo'lmasa qisqa taymautdan keyin davom etamiz), keyin
-   ikki kadr + kichik pauza bilan tinch holatni kutamiz va shundan
-   keyingina xoreografiyani boshlaymiz. */
-function fullscreenReady() {
-  return new Promise((resolve) => {
-    const el = document.documentElement
-    if (document.fullscreenElement || !el.requestFullscreen) return resolve()
-    let done = false
-    const finish = () => {
-      if (done) return
-      done = true
-      document.removeEventListener('fullscreenchange', finish)
-      clearTimeout(timer)
-      resolve()
-    }
-    const timer = setTimeout(finish, 420)
-    document.addEventListener('fullscreenchange', finish)
-    goFullscreen() // foydalanuvchi gesti — brauzer ruxsat beradi
-  })
-}
-
-/* Fullscreen'ga kirish oyna o'lchamini o'zgartiradi. O'lcham barqaror
-   bo'lmaguncha animatsiyani boshlamaymiz — aks holda resize paytida
-   kadrlar tushib ketadi. */
-function viewportSettled(maxMs = 500) {
-  return new Promise((resolve) => {
-    const t0 = performance.now()
-    let lw = -1
-    let lh = -1
-    let stable = 0
-    const check = () => {
-      const w = window.innerWidth
-      const h = window.innerHeight
-      stable = w === lw && h === lh ? stable + 1 : 0
-      lw = w
-      lh = h
-      if (stable >= 1 || performance.now() - t0 > maxMs) return resolve()
-      requestAnimationFrame(check)
-    }
-    requestAnimationFrame(check)
-  })
-}
-
-/* Ikki kadr = oldingi resize/repaint tugagan, kompozitor tayyor */
-function nextPaint() {
-  return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
 }
 
 /* Tekis qog'oz ekranni to'liq qoplashi uchun masshtab va siljishni
@@ -285,19 +242,14 @@ function measurePaper() {
   paperDy.value = Math.round(vh / 2 - (r.top + r.height / 2))
 }
 
-async function openCover() {
-  if (!covered.value || openingAnim.value || arming.value) return
-  arming.value = true
-  await fullscreenReady()
-  await viewportSettled()
-  await nextPaint()
-  if (!covered.value) {
-    arming.value = false
-    return
-  }
+/* Konvert DARHOL ochiladi: fullscreen yoki viewport o'zgarishini kutmaymiz
+   (ilgari bosishdan keyin ~1s hech narsa ko'rinmasdi — "qotdi" taassuroti).
+   Fullscreen alohida, bloklamaydigan chaqiruv sifatida ketadi. */
+function openCover() {
+  if (!covered.value || openingAnim.value) return
   measurePaper()
-  arming.value = false
   startOpening()
+  goFullscreen()
 }
 
 function startOpening() {
@@ -317,7 +269,6 @@ function startOpening() {
 
 /* ---- To'liq ekran (F11 kabi) ---------------------------------------- */
 const isFullscreen = ref(false)
-let fsWaitRetry = null
 
 function goFullscreen() {
   const el = document.documentElement
@@ -332,32 +283,6 @@ function goFullscreen() {
 
 function onFsChange() {
   isFullscreen.value = !!document.fullscreenElement
-  if (isFullscreen.value && fsWaitRetry) {
-    window.removeEventListener('pointerdown', fsWaitRetry)
-    window.removeEventListener('keydown', fsWaitRetry)
-    fsWaitRetry = null
-  }
-}
-
-function armRetry() {
-  if (fsWaitRetry || document.fullscreenElement) return
-  fsWaitRetry = () => {
-    goFullscreen()
-    window.removeEventListener('pointerdown', fsWaitRetry)
-    window.removeEventListener('keydown', fsWaitRetry)
-    fsWaitRetry = null
-  }
-  window.addEventListener('pointerdown', fsWaitRetry, { once: true })
-  window.addEventListener('keydown', fsWaitRetry, { once: true })
-}
-
-function requestFullscreen() {
-  // Brauzerlar fullscreen'ni faqat foydalanuvchi gesti bilan beradi —
-  // yuklanishda behuda so'rov yubormaymiz (konsol ogohlantirishi ham yo'q),
-  // shunchaki birinchi bosishni kutamiz.
-  requestAnimationFrame(() => {
-    if (!document.fullscreenElement) armRetry()
-  })
 }
 
 function showToast(msg) {
@@ -390,11 +315,7 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   document.removeEventListener('fullscreenchange', onFsChange)
-  if (fsWaitRetry) {
-    window.removeEventListener('pointerdown', fsWaitRetry)
-    window.removeEventListener('keydown', fsWaitRetry)
-    fsWaitRetry = null
-  }
+  clearTimeout(slowTimer)
   // Sahifadan chiqsak to'liq ekrandan chiqamiz
   if (document.fullscreenElement && typeof document.exitFullscreen === 'function') {
     document.exitFullscreen().catch(() => { })
