@@ -14,13 +14,74 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="dns-prefetch" href="https://taklifnoma-1.onrender.com" />
     <link rel="preconnect" href="https://taklifnoma-1.onrender.com" crossorigin />
+    <!-- Fontlar render'ni bloklamaydi: CSS yuklangach qo'llanadi (display=swap) -->
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Great+Vibes&family=Inter:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@400;500;600&family=Playfair+Display:wght@400;600;700&display=swap"
+    />
     <link
       href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Great+Vibes&family=Inter:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@400;500;600&family=Playfair+Display:wght@400;600;700&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Great+Vibes&family=Inter:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@400;500;600&family=Playfair+Display:wght@400;600;700&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
+    <!-- JS yuklanguncha ko'rinadigan birinchi ekran: qora fon o'rniga
+         zarf belgisi darhol chiqadi (FCP va "sekin ochilyapti" hissi uchun). -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #0b0a14;
+        color: #f5f1e6;
+      }
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: radial-gradient(120% 90% at 50% 0%, #1b1630 0%, #0b0a14 65%);
+      }
+      #boot-splash svg {
+        width: 72px;
+        height: 72px;
+        color: #f5c451;
+        opacity: 0.9;
+        animation: bootPulse 1.6s ease-in-out infinite;
+      }
+      @keyframes bootPulse {
+        0%,
+        100% {
+          transform: translateY(0) scale(1);
+          opacity: 0.55;
+        }
+        50% {
+          transform: translateY(-4px) scale(1.04);
+          opacity: 0.95;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #boot-splash svg {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <div id="boot-splash" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2.5" y="5" width="19" height="14" rx="2.5" />
+          <path d="m3 7 9 6.5L21 7" />
+        </svg>
+      </div>
+    </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
