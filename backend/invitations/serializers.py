@@ -15,6 +15,8 @@ class InvitationCreateSerializer(serializers.ModelSerializer):
             "to_name",
             "event_at",
             "place",
+            "place_lat",
+            "place_lng",
             "theme",
             "ambient_effects",
             "particle_effects",
@@ -28,6 +30,20 @@ class InvitationCreateSerializer(serializers.ModelSerializer):
         value = (value or "").strip()
         if not value:
             raise serializers.ValidationError("Ismni kiriting.")
+        return value
+
+    def validate_place_lat(self, value):
+        if value is None:
+            return None
+        if not -90 <= value <= 90:
+            raise serializers.ValidationError("Kenglik -90..90 oralig'ida bo'lishi kerak.")
+        return value
+
+    def validate_place_lng(self, value):
+        if value is None:
+            return None
+        if not -180 <= value <= 180:
+            raise serializers.ValidationError("Uzunlik -180..180 oralig'ida bo'lishi kerak.")
         return value
 
     def validate_event_at(self, value):
@@ -95,6 +111,8 @@ class InvitationSerializer(serializers.ModelSerializer):
             "to_name",
             "event_at",
             "place",
+            "place_lat",
+            "place_lng",
             "theme",
             "ambient_effects",
             "particle_effects",

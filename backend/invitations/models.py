@@ -51,6 +51,9 @@ class Invitation(models.Model):
 
     event_at = models.DateTimeField()
     place = models.CharField(max_length=200, blank=True, default="")
+    # Xaritada belgilangan nuqta (ixtiyoriy). Bo'sh bo'lsa faqat matn ko'rsatiladi.
+    place_lat = models.FloatField(null=True, blank=True)
+    place_lng = models.FloatField(null=True, blank=True)
 
     theme = models.CharField(max_length=30, default="gold")
     ambient_effects = models.JSONField(default=list, blank=True)

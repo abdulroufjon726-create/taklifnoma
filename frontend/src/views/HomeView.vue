@@ -73,34 +73,6 @@
       </article>
     </section>
 
-    <!-- ============================ GALLERY =========================== -->
-    <section class="gallery">
-      <header class="sec-head">
-        <h2 class="sec-title">{{ t('home.galleryTitle') }}</h2>
-        <p class="sec-sub">{{ t('home.gallerySub') }}</p>
-      </header>
-      <div class="gallery-grid">
-        <article
-          v-for="(theme, i) in themes"
-          :key="theme.id"
-          class="theme-card reveal"
-          :style="{
-            '--d': `${i * 100}ms`,
-            '--bg': `linear-gradient(165deg, ${theme.bg1}, ${theme.bg2} 55%, ${theme.bg3})`,
-            '--ac': theme.accent,
-            '--ac2': theme.accent2,
-            '--tx': theme.txt,
-          }"
-        >
-          <span class="theme-sheen"></span>
-          <p class="theme-kicker">✦ INVITATION ✦</p>
-          <p class="theme-names">Aziz &amp; Malika</p>
-          <p class="theme-meta">25.12.2026 · 18:00</p>
-          <span class="theme-name">{{ theme.name }}</span>
-        </article>
-      </div>
-    </section>
-
     <!-- ============================= STEPS ============================ -->
     <section class="steps">
       <h2 class="sec-title center">{{ t('home.howTitle') }}</h2>
@@ -113,18 +85,6 @@
           </div>
         </li>
       </ol>
-    </section>
-
-    <!-- ============================== CTA ============================= -->
-    <section class="cta-wrap reveal">
-      <div class="glass card cta-card">
-        <h2>{{ t('home.ctaTitle') }}</h2>
-        <p>{{ t('home.ctaSub') }}</p>
-        <button class="btn btn-primary" @click="create">
-          <AppIcon name="ph:sparkle" />
-          {{ auth.token ? t('home.cta') : t('nav.login') }}
-        </button>
-      </div>
     </section>
 
     <footer class="foot">
@@ -732,6 +692,98 @@ watch(locale, () => {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
+  }
+}
+
+/* ---- Bitta ekran: bo'limlar siqilgan, scrollsiz ---- */
+.home {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.7rem, 1.7vh, 1.2rem);
+  padding: clamp(0.8rem, 2.4vh, 1.5rem) 1rem clamp(0.6rem, 1.8vh, 1rem);
+  max-width: 80rem;
+  margin: 0 auto;
+}
+.hero {
+  min-height: 0;
+}
+.hero-title {
+  font-size: clamp(1.9rem, min(6.4vh, 5.2vw), 3.4rem);
+}
+.hero-lead {
+  margin-top: 0.55rem;
+  font-size: clamp(0.8rem, 1.5vh, 0.98rem);
+  line-height: 1.5;
+}
+.hero-actions {
+  margin-top: 0.8rem;
+}
+.hero-note {
+  margin-top: 0.45rem;
+}
+.features {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin: 0;
+}
+.features .feature {
+  padding: 0.8rem 0.9rem;
+}
+.features .feature h3 {
+  font-size: 0.92rem;
+}
+.features .feature p {
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+.steps {
+  margin: 0;
+}
+.steps .sec-title {
+  font-size: clamp(1.05rem, 2.2vh, 1.4rem);
+  margin-bottom: 0.5rem;
+}
+.steps-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin: 0;
+}
+.steps .step {
+  padding: 0.55rem 0.65rem;
+}
+.steps .step h3 {
+  font-size: 0.86rem;
+}
+.steps .step p {
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+.foot {
+  margin-top: auto;
+  padding-top: 0.3rem;
+}
+@media (max-width: 820px) {
+  .hero-art {
+    display: none;
+  }
+  .features {
+    grid-template-columns: 1fr;
+  }
+  .features .feature:nth-child(n + 2) {
+    display: none;
+  }
+  .steps-list {
+    grid-template-columns: 1fr;
+  }
+  .steps .step:nth-child(n + 2) {
+    display: none;
+  }
+}
+@media (max-height: 700px) {
+  .features,
+  .hero-note {
+    display: none;
   }
 }
 </style>

@@ -29,6 +29,25 @@ html,
 body,
 #app {
   height: 100%;
+  overflow: hidden;
+}
+
+/* Scroll ishlaydi, lekin scrollbar ko'rinmaydi (barcha brauzerlarda) */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* Bo'limlar bitta ekranga sig'adi: sarlavha 4rem, qolgani main ichida */
+main {
+  height: calc(100dvh - 4rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 body {
@@ -453,6 +472,32 @@ input[type="time"].field {
   flex-wrap: wrap;
 }
 
+.st-place-btn {
+  background: none;
+  border: 0;
+  padding: 0.1em 0.25em;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.28em;
+  transition: color 0.2s;
+}
+.st-place-btn:hover {
+  color: #fff;
+}
+.route-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(6px);
+  overflow-y: auto;
+}
+.route-panel {
+  width: min(34rem, 100%);
+}
 .st-foot {
   font-size: min(2.4cqw, 1.5cqh);
   letter-spacing: 0.28em;

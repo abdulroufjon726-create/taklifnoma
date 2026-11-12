@@ -221,6 +221,27 @@ def logout(request):
     return Response({"ok": True})
 
 
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def set_password(request):
+    """Google bilan kirgan (paroli yo'q) foydalanuvchi parol o'rnatadi."""
+    user = user_from_request(request)
+    if not user:
+        return Response(
+            {"code": "unauthorized", "detail": "Kirish talab qilinadi."},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+    password = str(request.data.get("password", ""))
+    if len(password) < 8:
+        return Response(
+            {"code": "weak_password", "detail": "Parol kamida 8 belgidan iborat bo'lsin."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    user.set_password(password)
+    user.save(update_fields=["password"])
+    return Response(_user_payload(user))
+
+
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def auth_config(request):

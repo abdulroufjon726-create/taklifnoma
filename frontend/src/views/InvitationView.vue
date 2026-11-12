@@ -39,7 +39,7 @@
 
   <!-- Taklifnoma: to'liq ekran, skrollsiz -->
   <div v-else class="fixed inset-0 h-[100dvh] w-full overflow-hidden bg-black">
-    <InvitationStage :data="invitation" :paused="!stageLive" />
+    <InvitationStage :data="invitation" :paused="!stageLive" @place-route="showRoute = true" />
 
     <!-- KONVERT: taklifnomadan oldin ochiladigan pardaz -->
     <div v-if="covered"
@@ -122,6 +122,24 @@
       class="fade-in fixed bottom-6 left-1/2 z-30 -translate-x-1/2 rounded-full bg-white/10 px-5 py-2.5 text-sm text-white backdrop-blur-md">
       {{ toast }}
     </p>
+
+    <!-- Manzil: matn bosilganda xarita va yo'l -->
+    <div
+      v-if="showRoute && invitation && invitation.place_lat !== null && invitation.place_lng !== null"
+      class="route-overlay"
+      @click.self="showRoute = false"
+    >
+      <div class="route-panel">
+        <RouteMap
+          :lat="invitation.place_lat"
+          :lng="invitation.place_lng"
+          :label="invitation.place"
+        />
+        <button type="button" class="btn btn-ghost mt-2 w-full" @click="showRoute = false">
+          {{ t('map.close') }}
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -129,6 +147,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import InvitationStage from '../components/InvitationStage.vue'
+import RouteMap from '../components/RouteMap.vue'
 import AppIcon from '../components/AppIcon.vue'
 import LangSwitch from '../components/LangSwitch.vue'
 import { fetchInvitation, getCachedInvitation, shareUrl, copyText } from '../api.js'
@@ -144,6 +163,7 @@ const invitation = ref(null)
 const errorText = ref('')
 const copied = ref(false)
 const toast = ref('')
+const showRoute = ref(false)
 let toastTimer = null
 const covered = ref(false) // konvert pardazi — bosilmaguncha taklifnoma yashirinadi
 const openingAnim = ref(false) // konvert animatsiyasi ketmoqda

@@ -6,6 +6,7 @@
 import { extra } from './extra.js'
 import { extra2 } from './extra2.js'
 import { extra3 } from './extra3.js'
+import { extra4 } from './extra4.js'
 
 const uz = {
   nav: {
@@ -974,8 +975,8 @@ const en = {
 
 /* Bosh sahifa / hisob / kirish tarjimalari alohida faylda */
 export const dict = {
-  uz: { ...uz, ...extra.uz, ...extra2.uz, ...extra3.uz },
-  ru: { ...ru, ...extra.ru, ...extra2.ru, ...extra3.ru },
-  en: { ...en, ...extra.en, ...extra2.en, ...extra3.en },
+  uz: { ...uz, ...extra.uz, ...extra2.uz, ...extra3.uz, ...extra4.uz },
+  ru: { ...ru, ...extra.ru, ...extra2.ru, ...extra3.ru, ...extra4.ru },
+  en: { ...en, ...extra.en, ...extra2.en, ...extra3.en, ...extra4.en },
 }
 export const LOCALES = ['uz', 'ru', 'en']

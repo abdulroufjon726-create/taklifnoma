@@ -53,9 +53,9 @@
           :style="cardStyle(inv, i)"
           role="button"
           tabindex="0"
-          @click="open(inv)"
-          @keydown.enter.prevent="open(inv)"
-          @keydown.space.prevent="open(inv)"
+          @click="openPage(inv)"
+          @keydown.enter.prevent="openPage(inv)"
+          @keydown.space.prevent="openPage(inv)"
         >
           <span class="sheen"></span>
           <p class="card-kicker">✦ INVITATION</p>
@@ -311,11 +311,18 @@ watch(locale, () => {
   z-index: 1;
   margin: 0 auto;
   max-width: 80rem;
-  padding: 2.4rem 1.1rem 4rem;
+  padding: 1.2rem 1.1rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.envs > .grid-cards {
+  min-height: 0;
+  align-content: start;
 }
 @media (min-width: 640px) {
   .envs {
-    padding: 3rem 1.5rem 5rem;
+    padding: 1.4rem 1.5rem 1.6rem;
   }
 }
 .envs-head {
@@ -324,7 +331,15 @@ watch(locale, () => {
   align-items: flex-end;
   justify-content: space-between;
   gap: 1.2rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.1rem;
+}
+@media (max-height: 760px) {
+  .envs-title {
+    font-size: clamp(1.4rem, 3vh, 2rem);
+  }
+  .envs-sub {
+    display: none;
+  }
 }
 .envs-kicker {
   font-size: 0.7rem;

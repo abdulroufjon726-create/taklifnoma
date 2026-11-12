@@ -149,6 +149,15 @@
                 :placeholder="t('builder.fPlacePh')"
               />
             </label>
+
+            <PlaceMap
+              :place="form.place"
+              :lat="form.place_lat"
+              :lng="form.place_lng"
+              @update:place="form.place = $event"
+              @update:lat="form.place_lat = $event"
+              @update:lng="form.place_lng = $event"
+            />
           </div>
         </div>
 
@@ -435,6 +444,7 @@ import {
   warmUp,
 } from '../api.js'
 import { auth, loadMe, signOutLocal } from '../auth.js'
+import PlaceMap from '../components/PlaceMap.vue'
 import { getMine, saveMine } from '../data/mine.js'
 import { useI18n, tf } from '../i18n/index.js'
 import {
@@ -480,6 +490,8 @@ const form = reactive({
   to_name: t('presetTo.toy'),
   from_name: t('presetFrom.toy'),
   place: '',
+  place_lat: null,
+  place_lng: null,
   date: '',
   time: '18:00',
   theme: 'gold',
@@ -625,6 +637,8 @@ function buildDraft() {
     to_name: form.to_name.trim() || t('builder.defTo'),
     from_name: form.from_name.trim() || t('builder.defFrom'),
     place: form.place.trim(),
+    place_lat: form.place_lat,
+    place_lng: form.place_lng,
     event_at: isoFromDate(form.date, form.time) || FALLBACK_EVENT_AT,
     theme: form.theme,
     ambient_effects: form.ambient_effects,
@@ -707,6 +721,8 @@ function applyMineEntry(entry) {
   form.to_name = p.to_name || ''
   form.from_name = p.from_name || ''
   form.place = p.place || ''
+  form.place_lat = typeof p.place_lat === 'number' ? p.place_lat : null
+  form.place_lng = typeof p.place_lng === 'number' ? p.place_lng : null
   form.date = p.date || ''
   form.time = p.time || '18:00'
   form.theme = p.theme || 'gold'
@@ -785,6 +801,8 @@ async function submit() {
       from_name: form.from_name.trim() || t('presetFrom.toy'),
       event_at: isoFromDate(form.date, form.time),
       place: form.place.trim(),
+      place_lat: form.place_lat,
+      place_lng: form.place_lng,
       theme: form.theme,
       ambient_effects: form.ambient_effects,
       particle_effects: form.particle_effects,
@@ -890,6 +908,8 @@ function resetAll() {
   form.first_name = ''
   form.last_name = ''
   form.place = ''
+  form.place_lat = null
+  form.place_lng = null
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 

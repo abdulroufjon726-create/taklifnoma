@@ -33,6 +33,24 @@
         </div>
       </div>
 
+      <form v-if="auth.user && !auth.user.has_password" class="pw-form" @submit.prevent="savePassword">
+        <p class="pw-title">{{ t('profile.setPwTitle') }}</p>
+        <div class="pw-row">
+          <input
+            v-model="pw"
+            class="field"
+            type="password"
+            minlength="8"
+            autocomplete="new-password"
+            :placeholder="t('profile.setPwPh')"
+          />
+          <button class="btn btn-primary" type="submit" :disabled="pwBusy || pw.length < 8">
+            {{ t('profile.setPwBtn') }}
+          </button>
+        </div>
+        <p v-if="pwMsg" class="pw-msg">{{ pwMsg }}</p>
+      </form>
+
       <div class="prof-actions">
         <RouterLink to="/envelopes" class="btn btn-primary">
           <AppIcon name="ph:envelope-simple" />
@@ -58,7 +76,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { fetchMyInvitations } from '../api.js'
-import { auth, authConfig, loadAuthConfig, loadMe, signOut } from '../auth.js'
+import { auth, authConfig, loadAuthConfig, loadMe, setPassword, signOut } from '../auth.js'
 import { useI18n } from '../i18n/index.js'
 import AppIcon from '../components/AppIcon.vue'
 import SiteHeader from '../components/SiteHeader.vue'
@@ -67,6 +85,9 @@ const { t } = useI18n()
 const router = useRouter()
 
 const items = ref([])
+const pw = ref('')
+const pwBusy = ref(false)
+const pwMsg = ref('')
 
 const name = computed(() => auth.user?.name || auth.user?.email || '')
 const initial = computed(() => (name.value || '?').trim().charAt(0).toUpperCase())
@@ -98,6 +119,22 @@ onMounted(async () => {
 async function logout() {
   await signOut()
   router.replace('/')
+}
+
+/* Google bilan kirgan hisob uchun parol o'rnatish */
+async function savePassword() {
+  if (pwBusy.value || pw.value.length < 8) return
+  pwBusy.value = true
+  pwMsg.value = ''
+  try {
+    await setPassword(pw.value)
+    pwMsg.value = t('profile.setPwDone')
+    pw.value = ''
+  } catch (e) {
+    pwMsg.value = e && e.code === 'weak_password' ? t('profile.setPwErr') : t('profile.setPwErr')
+  } finally {
+    pwBusy.value = false
+  }
 }
 </script>
 

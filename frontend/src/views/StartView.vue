@@ -213,4 +213,54 @@ onMounted(() => {
     transform: none;
   }
 }
+
+/* ---- Bitta ekran ---- */
+.start {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.6rem, 1.6vh, 1rem);
+  padding: clamp(0.8rem, 2.2vh, 1.5rem) 1rem clamp(0.6rem, 1.8vh, 1rem);
+}
+.start-head {
+  margin-bottom: 0.2rem;
+}
+.start-title {
+  font-size: clamp(1.5rem, min(5.4vh, 4.4vw), 2.6rem);
+}
+.start-sub {
+  font-size: clamp(0.78rem, 1.5vh, 0.9rem);
+}
+.start .step {
+  padding: 0.65rem 0.75rem;
+}
+.start .step h3 {
+  font-size: 0.88rem;
+}
+.start .step p {
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+.start .faq {
+  margin: 0;
+}
+.start .faq-grid {
+  gap: 0.6rem;
+}
+.start .faq-card {
+  padding: 0.65rem 0.75rem;
+  font-size: 0.76rem;
+}
+.start .start-actions {
+  margin-top: 0.2rem;
+}
+@media (max-width: 820px) {
+  .start .faq {
+    display: none;
+  }
+}
+@media (max-height: 720px) {
+  .start .faq {
+    display: none;
+  }
+}
 </style>

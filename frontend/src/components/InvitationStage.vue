@@ -46,7 +46,15 @@
         <p class="st-date">
           <AnimatedText :text="dateLabel" :anim="data.text_anim" :delay="1000" :active="!paused" />
         </p>
-        <p v-if="data.place" class="st-place"><AppIcon name="ph:map-pin" /> {{ data.place }}</p>
+        <button
+          v-if="hasPoint"
+          type="button"
+          class="st-place st-place-btn"
+          @click="emit('place-route')"
+        >
+          <AppIcon name="ph:map-pin" /> {{ data.place || t('map.venue') }}
+        </button>
+        <p v-else-if="data.place" class="st-place"><AppIcon name="ph:map-pin" /> {{ data.place }}</p>
       </div>
 
       <Countdown :target="data.event_at" @finish="celebrate" />
@@ -74,6 +82,12 @@ const props = defineProps({
      pauzada turadi — keyin qayta mount qilmasdan davom etadi. */
   paused: { type: Boolean, default: false },
 })
+
+const emit = defineEmits(['place-route'])
+
+const hasPoint = computed(
+  () => typeof props.data.place_lat === 'number' && typeof props.data.place_lng === 'number',
+)
 
 const burst = ref(false)
 

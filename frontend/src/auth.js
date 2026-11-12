@@ -141,3 +141,25 @@ export function passwordLogin(email, password) {
 export function registerAccount(name, email, password) {
   return authPost('/api/auth/register/', { name, email, password })
 }
+
+/** Google bilan kirgan hisobga parol o'rnatish (keyin email bilan ham kirish mumkin). */
+export async function setPassword(password) {
+  const res = await fetch(`${API_BASE}/api/auth/password/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${auth.token}`,
+    },
+    body: JSON.stringify({ password }),
+    cache: 'no-store',
+  })
+  const data = await readJson(res)
+  if (!res.ok) {
+    const err = new Error((data && data.detail) || 'password failed')
+    err.code = (data && data.code) || 'default'
+    err.status = res.status
+    throw err
+  }
+  auth.user = data
+  return data
+}
