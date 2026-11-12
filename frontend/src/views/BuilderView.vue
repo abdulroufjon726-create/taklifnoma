@@ -21,7 +21,7 @@
         >
           {{ t('nav.last') }} <b class="font-semibold tracking-widest text-gold">{{ prettyCode(lastCode) }}</b> →
         </RouterLink>
-        <RouterLink to="/enter" class="btn btn-ghost !px-3 !py-2 text-sm sm:!px-4">
+        <RouterLink to="/enter" class="btn btn-ghost !px-3 !py-2 text-sm !hidden sm:!inline-flex sm:!px-4">
           <AppIcon name="ph:lock-key" />
           <span class="hidden sm:inline">{{ t('nav.enterCode') }}</span>
         </RouterLink>
@@ -691,7 +691,7 @@ async function loadMine() {
   } catch (e) {
     if (e && e.status === 401) {
       signOutLocal()
-      router.replace({ path: '/login', query: { next: route.fullPath } })
+      router.replace({ path: '/login', query: { next: route.fullPath, expired: '1' } })
     }
     /* boshqa xatolarda forma baribir ishlaydi */
   }
@@ -831,7 +831,7 @@ async function submit() {
     if (e.status === 401) {
       // Sessiya tugagan — qayta kirishga yuboramiz
       signOutLocal()
-      router.replace({ path: '/login', query: { next: '/create' } })
+      router.replace({ path: '/login', query: { next: '/create', expired: '1' } })
       return
     }
     if (e.status === 429) {

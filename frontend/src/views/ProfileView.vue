@@ -85,7 +85,12 @@ onMounted(async () => {
   await Promise.all([loadAuthConfig(), loadMe()])
   try {
     items.value = await fetchMyInvitations()
-  } catch {
+  } catch (e) {
+    if (e && (e.status === 401 || e.status === 403)) {
+      const expired = e.status === 401 ? '1' : ''
+      router.replace({ path: '/login', query: { next: '/account', expired } })
+      return
+    }
     /* statistika bo'lmasa ham sahifa ishlaydi */
   }
 })

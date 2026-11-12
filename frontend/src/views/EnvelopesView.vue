@@ -249,7 +249,8 @@ async function load() {
     items.value = [...merged, ...extras]
   } catch (e) {
     if (e && (e.status === 401 || e.status === 403)) {
-      router.replace({ path: '/login', query: { next: '/envelopes' } })
+      const expired = e.status === 401 ? '1' : ''
+      router.replace({ path: '/login', query: { next: '/envelopes', expired } })
       return
     }
     error.value = e?.message || 'error'

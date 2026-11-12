@@ -58,6 +58,7 @@
           />
         </label>
 
+        <p v-if="expired && !errorMsg" class="form-note">{{ t('loginExtra.expired') }}</p>
         <p v-if="errorMsg" class="form-err">{{ errorMsg }}</p>
 
         <button class="btn btn-primary submit" type="submit" :disabled="busy">
@@ -98,6 +99,7 @@ const route = useRoute()
 const router = useRouter()
 
 const mode = ref(route.name === 'register' ? 'register' : 'login')
+const expired = ref(route.query.expired === '1')
 const busy = ref(false)
 const errorMsg = ref('')
 const form = reactive({ name: '', email: '', password: '' })
@@ -246,6 +248,14 @@ async function submit() {
   font-size: 0.74rem;
   letter-spacing: 0.05em;
   color: rgba(255, 255, 255, 0.5);
+}
+.form-note {
+  border-radius: 0.8rem;
+  border: 1px solid rgba(245, 196, 81, 0.35);
+  background: rgba(245, 196, 81, 0.1);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.78rem;
+  color: #f5c451;
 }
 .form-err {
   border-radius: 0.8rem;

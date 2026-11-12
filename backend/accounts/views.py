@@ -37,14 +37,45 @@ def _redirect_uri(request: str) -> str:
     return request.build_absolute_uri(reverse("google-callback"))
 
 
+# Google'dan keyin qaytishga ruxsat berilgan frontend domenlari.
+# Ro'yxatga kirmagan origin (masalan hujumchining sayti) qabul qilinmaydi,
+# aks holda kirish tokeni begona domenga yuborilib qolishi mumkin edi.
+KNOWN_FRONTEND_HOSTS = {"taklifnoma-007.vercel.app"}
+LOOPBACK_HOSTS = {"localhost", "127.0.0.1", "[::1]"}
+
+
+def _allowed_origin(origin: str | None) -> str:
+    """Origin'ni tekshiradi: faqat ma'lum frontend domenlari o'tadi."""
+    if not isinstance(origin, str) or not origin:
+        return ""
+    parsed = urllib.parse.urlparse(origin)
+    host = (parsed.hostname or "").lower()
+    if parsed.scheme not in ("http", "https") or not host:
+        return ""
+    allowed = set(KNOWN_FRONTEND_HOSTS) | LOOPBACK_HOSTS
+    for candidate in (
+        list(getattr(settings, "CORS_ALLOWED_ORIGINS", []))
+        + list(getattr(settings, "CSRF_TRUSTED_ORIGINS", []))
+        + [getattr(settings, "FRONTEND_URL", "")]
+    ):
+        candidate_host = urllib.parse.urlparse(candidate or "").hostname
+        if candidate_host:
+            allowed.add(candidate_host.lower())
+    if host not in allowed:
+        logger.warning("Google OAuth: ruxsatsiz origin rad etildi: %s", origin)
+        return ""
+    return f"{parsed.scheme}://{parsed.netloc}".rstrip("/")
+
+
 def _base(origin: str | None) -> str:
     """Qaytish manzili: FRONTEND_URL berilgan bo'lsa — o'sha, aks holda
-    brauzer yuborgan origin (state ichida imzolangan holda saqlanadi)."""
+    brauzer yuborgan (tekshirilgan) origin. state ichida imzolanadi."""
     configured = os.environ.get("FRONTEND_URL", "").strip()
     if configured:
         return configured.rstrip("/")
-    if isinstance(origin, str) and origin.startswith(("http://", "https://")):
-        return origin.rstrip("/")
+    checked = _allowed_origin(origin)
+    if checked:
+        return checked
     return (getattr(settings, "FRONTEND_URL", "") or "").rstrip("/")
 
 
@@ -193,8 +224,15 @@ def logout(request):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def auth_config(request):
-    """Frontend Google tugmasini ko'rsatishi uchun: sozlanganmi?"""
-    return Response({"google": bool(getattr(settings, "GOOGLE_CLIENT_ID", ""))})
+    """Frontend Google tugmasi uchun: sozlanganmi va qaysi redirect URI?"""
+    google = bool(getattr(settings, "GOOGLE_CLIENT_ID", ""))
+    body = {"google": google}
+    if google:
+        body["redirect_uri"] = _redirect_uri(request)
+    else:
+        # Sozlashda aynan shu manzil Google Console'ga yoziladi
+        body["redirect_uri"] = _redirect_uri(request)
+    return Response(body)
 
 
 # ---- Email + parol bilan kirish -----------------------------------------

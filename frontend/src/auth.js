@@ -37,6 +37,11 @@ export function signOutLocal() {
   auth.user = null
 }
 
+// api.js 401 ko'rsa shu hodisani yuboradi — UI darhol "chiqqan" holatga o'tadi.
+if (typeof window !== 'undefined') {
+  window.addEventListener('taklifnoma:auth-expired', signOutLocal)
+}
+
 async function readJson(res) {
   try {
     return await res.json()

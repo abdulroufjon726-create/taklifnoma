@@ -98,6 +98,14 @@ async function parse(res) {
     const err = new Error(extractDetail(data) || 'Serverda xatolik yuz berdi')
     err.status = res.status
     err.data = data
+    // Sessiya tugagan (token eskirgan/o'chirilgan) — eski tokenni darhol tashlaymiz,
+    // aks holda /login sahifasi uni ko'rib qayta /envelopes'ga qaytarib yuboradi.
+    if (res.status === 401 && getToken()) {
+      setToken('')
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('taklifnoma:auth-expired'))
+      }
+    }
     throw err
   }
   return data

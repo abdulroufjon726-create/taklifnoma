@@ -40,6 +40,7 @@ const uz = {
   },
   loginExtra: {
     tooMany: "Juda ko'p urinish. 15 daqiqadan keyin qayta urinib ko'ring.",
+    expired: "Sessiya muddati tugadi — qayta kiring.",
     registerKicker: "Ro'yxatdan o'tish",
     loginKicker: 'Kirish',
   },
@@ -82,6 +83,7 @@ const ru = {
   },
   loginExtra: {
     tooMany: 'Слишком много попыток. Попробуйте через 15 минут.',
+    expired: 'Сессия истекла — войдите снова.',
     registerKicker: 'Регистрация',
     loginKicker: 'Вход',
   },
@@ -124,6 +126,7 @@ const en = {
   },
   loginExtra: {
     tooMany: 'Too many attempts. Try again in 15 minutes.',
+    expired: 'Your session expired — please sign in again.',
     registerKicker: 'Sign up',
     loginKicker: 'Sign in',
   },

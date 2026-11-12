@@ -77,6 +77,30 @@ Render env variantlari (xizmat → Environment):
 > bo'sh baza bilan API 500 bermaydi. Tirikligini `GET /api/health/` orqali
 > tekshirish mumkin. Kerak bo'lsa `DJANGO_AUTO_MIGRATE=0` bilan o'chiriladi.
 
+### Google bilan kirishni yoqish
+
+Kod tayyor: kalitlar qo'yilishi bilan login sahifasidagi "Google bilan davom etish"
+tugmasi avtomatik ishlaydi (sozlanmagan bo'lsa tugma o'chirilgan holatda turadi va
+email/parol ishlatiladi). Kerak bo'lgani — Google Cloud'dan bitta OAuth client:
+
+1. [console.cloud.google.com](https://console.cloud.google.com) → loyiha yaratish
+2. **APIs & Services → OAuth consent screen** → External → nom va emailni to'ldirish
+   (Testing rejimida qoldirsangiz, sinov foydalanuvchilarini qo'shishni unutmang)
+3. **Credentials → Create credentials → OAuth client ID → Web application**
+4. **Authorized redirect URIs** ga aynan shu manzilni yozing:
+   `https://taklifnoma-1.onrender.com/api/auth/google/callback/`
+   (aniq manzilni `GET /api/auth/config/` javobidagi `redirect_uri` dan ham olish mumkin)
+5. Render → **taklifnoma-api** → Environment bo'limiga qo'shing:
+   - `GOOGLE_CLIENT_ID` — `xxxx.apps.googleusercontent.com`
+   - `GOOGLE_CLIENT_SECRET` — `xxxx`
+   - ixtiyoriy: `FRONTEND_URL` = `https://taklifnoma-007.vercel.app`
+6. Saqlang (Render o'zi qayta ishga tushiradi) → `GET /api/auth/config/`
+   `{"google": true, "redirect_uri": "..."}` qaytarishi kerak; shundan keyin tugma ishlaydi.
+
+> Kalitlarni `backend/.env` ga ham yozish mumkin (git'ga qo'shilmaydi).
+> Oqim testlari Google serveriga murojaat qilmasdan ishlaydi:
+> `cd backend && python manage.py test accounts`.
+
 ### Frontend → Vercel
 
 Loyiha nomi **taklifnoma**, asosiy domen **taklifnoma-007.vercel.app**.

@@ -166,7 +166,8 @@ async function load() {
     inv.value = list.find((x) => x.code === code) || null
   } catch (e) {
     if (e && (e.status === 401 || e.status === 403)) {
-      router.replace({ path: '/login', query: { next: route.fullPath } })
+      const expired = e.status === 401 ? '1' : ''
+      router.replace({ path: '/login', query: { next: route.fullPath, expired } })
       return
     }
     inv.value = null

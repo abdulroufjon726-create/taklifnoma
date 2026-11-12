@@ -31,10 +31,10 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { auth } from '../auth.js'
+import { auth, loadMe } from '../auth.js'
 import { useI18n } from '../i18n/index.js'
 import AppIcon from './AppIcon.vue'
 import LangSwitch from './LangSwitch.vue'
@@ -43,6 +43,11 @@ const { t } = useI18n()
 const route = useRoute()
 
 const onBuilder = computed(() => route.name === 'builder')
+
+// Sahifa foydalanuvchini o'zi yuklamasa ham avatar/ism to'g'ri ko'rinadi
+onMounted(() => {
+  if (auth.token && !auth.user) loadMe()
+})
 const name = computed(() => auth.user?.name || auth.user?.email || '')
 const initial = computed(() => (name.value || '?').trim().charAt(0).toUpperCase())
 const registerTo = computed(() => ({ path: '/register', query: { next: '/envelopes' } }))
