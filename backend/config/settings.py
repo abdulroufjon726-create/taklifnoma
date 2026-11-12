@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
+    "accounts",
     "invitations",
 ]
 
@@ -207,6 +208,15 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # ---------------------------------------------------------------------------
 # CORS (Vite dev server runs on another port during development)
 # ---------------------------------------------------------------------------
+# ---- Google bilan kirish -------------------------------------------------
+# Google Cloud Console → APIs & Services → Credentials → OAuth client (Web).
+# Authorized redirect URI: https://<backend>/api/auth/google/callback/
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "").strip()
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "").strip()
+GOOGLE_REDIRECT_URI = os.environ.get("GOOGLE_REDIRECT_URI", "").strip()
+# Login tugagach qaytadigan frontend manzili (Vercel domeni)
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "").strip() or "http://localhost:5173"
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",

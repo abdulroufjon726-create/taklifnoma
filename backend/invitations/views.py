@@ -10,6 +10,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
 
+from accounts.auth import user_from_request
+
 from .models import Invitation
 from .serializers import InvitationCreateSerializer, InvitationSerializer
 
@@ -50,19 +52,25 @@ def invitation_create(request):
     NOTE: there is intentionally no GET list endpoint — invitations are
     reachable only via their exact code (privacy requirement).
     """
+    user = user_from_request(request)
+    if not user:
+        return Response(
+            {"detail": "Taklifnoma yaratish uchun Google bilan kiring."},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
     serializer = InvitationCreateSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    invitation = serializer.save()
+    invitation = serializer.save(owner=user)
     data = dict(InvitationSerializer(invitation).data)
     # Tahrirlash kaliti faqat yaratuvchiga qaytariladi (GET'da hech qachon)
     data["edit_key"] = invitation.edit_key
     return Response(data, status=status.HTTP_201_CREATED)
 
 
-@api_view(["GET", "PATCH"])
+@api_view(["GET", "PATCH", "DELETE"])
 @permission_classes([AllowAny])
 def invitation_detail(request, code):
-    """Fetch one invitation by code; PATCH updates it with the edit key."""
+    """Kod bo'yicha taklifnoma. PATCH/DELETE — egasi yoki edit_key bilan."""
     normalized = "".join(ch for ch in code.upper() if ch.isalnum())
     if len(normalized) != 8:
         raise NotFound("Bunday kodli taklifnoma topilmadi.")
@@ -71,13 +79,21 @@ def invitation_detail(request, code):
     except Invitation.DoesNotExist:
         raise NotFound("Bunday kodli taklifnoma topilmadi.")
 
-    if request.method == "PATCH":
-        key = request.headers.get("X-Edit-Key", "")
-        if not key or not secrets.compare_digest(key, invitation.edit_key):
-            return Response(
-                {"detail": "Tahrirlash kaliti noto'g'ri."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+    if request.method in ("PATCH", "DELETE"):
+        user = user_from_request(request)
+        is_owner = bool(user and invitation.owner_id == user.id)
+        if not is_owner:
+            key = request.headers.get("X-Edit-Key", "")
+            if not key or not secrets.compare_digest(key, invitation.edit_key):
+                return Response(
+                    {"detail": "Bu taklifnomani o'zgartirish huquqi yo'q."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        if request.method == "DELETE":
+            invitation.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
         serializer = InvitationCreateSerializer(invitation, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -87,3 +103,39 @@ def invitation_detail(request, code):
     Invitation.objects.filter(pk=invitation.pk).update(views=F("views") + 1)
     invitation.views += 1
     return Response(InvitationSerializer(invitation).data)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def invitation_mine(request):
+    """Kirgan foydalanuvchining barcha taklifnomalari (yangi → eski)."""
+    user = user_from_request(request)
+    if not user:
+        return Response(
+            {"detail": "Kirish talab qilinadi."}, status=status.HTTP_401_UNAUTHORIZED
+        )
+    items = (
+        Invitation.objects.filter(owner=user)
+        .only(
+            "code",
+            "event_type",
+            "category",
+            "first_name",
+            "last_name",
+            "from_name",
+            "to_name",
+            "event_at",
+            "place",
+            "theme",
+            "ambient_effects",
+            "particle_effects",
+            "text_anim",
+            "card_anim",
+            "texts",
+            "fonts",
+            "views",
+            "created_at",
+        )[:200]
+    )
+    data = InvitationSerializer(items, many=True).data
+    return Response({"count": len(data), "results": data})

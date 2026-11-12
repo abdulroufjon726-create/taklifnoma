@@ -25,6 +25,10 @@
           <AppIcon name="ph:lock-key" />
           <span class="hidden sm:inline">{{ t('nav.enterCode') }}</span>
         </RouterLink>
+        <RouterLink to="/account" class="btn btn-ghost !px-3 !py-2 text-sm sm:!px-4">
+          <AppIcon name="ph:user-circle" />
+          <span class="hidden sm:inline">{{ t('auth.account') }}</span>
+        </RouterLink>
         <LangSwitch />
       </nav>
     </div>
@@ -48,7 +52,12 @@
       <section class="order-2 min-w-0 space-y-6 lg:order-1">
         <!-- Mening taklifnomalarim -->
         <div v-if="mine.length || editError" class="glass card">
-          <h2 class="section-title"><span class="num">↺</span> {{ t('builder.mineTitle') }}</h2>
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="section-title"><span class="num">↺</span> {{ t('builder.mineTitle') }}</h2>
+            <RouterLink to="/account" class="text-xs text-white/45 transition hover:text-gold">
+              {{ t('account.title') }} →
+            </RouterLink>
+          </div>
           <p v-if="editError" class="mt-3 rounded-xl border border-amber-300/30 bg-amber-300/10 px-4 py-2.5 text-xs leading-relaxed text-amber-200">
             {{ editError }}
           </p>
@@ -62,7 +71,7 @@
                 {{ e.payload?.first_name || e.code }}
                 <b class="ml-1 tracking-widest text-gold">{{ prettyCode(e.code) }}</b>
               </span>
-              <RouterLink :to="`/?edit=${e.code}`" class="chip !py-1 !text-xs">{{ t('builder.edit') }}</RouterLink>
+              <RouterLink :to="`/create?edit=${e.code}`" class="chip !py-1 !text-xs">{{ t('builder.edit') }}</RouterLink>
               <RouterLink :to="`/i/${e.code}`" class="chip !py-1 !text-xs">{{ t('builder.open') }}</RouterLink>
             </div>
           </div>
@@ -417,8 +426,16 @@ import AppIcon from '../components/AppIcon.vue'
 import TextComposer from '../components/TextComposer.vue'
 import InvitationStage from '../components/InvitationStage.vue'
 import LangSwitch from '../components/LangSwitch.vue'
-import { createInvitation, updateInvitation, shareUrl, copyText, warmUp } from '../api.js'
-import { listMine, getMine, saveMine } from '../data/mine.js'
+import {
+  createInvitation,
+  updateInvitation,
+  fetchMyInvitations,
+  shareUrl,
+  copyText,
+  warmUp,
+} from '../api.js'
+import { auth, loadMe } from '../auth.js'
+import { getMine, saveMine } from '../data/mine.js'
 import { useI18n, tf } from '../i18n/index.js'
 import {
   HOLIDAYS,
@@ -649,8 +666,32 @@ const resultLink = computed(() => (result.value ? shareUrl(result.value.code) : 
 const route = useRoute()
 const router = useRouter()
 const editing = ref(null) // { code, editKey }
-const mine = ref(listMine())
+const mine = ref([])
 const editError = ref('')
+
+/* Serverdan kelgan taklifnomani forma uchun "yozuv"ga aylantiramiz */
+function toEntry(inv) {
+  const d = new Date(inv.event_at)
+  const pad = (n) => String(n).padStart(2, '0')
+  const valid = !Number.isNaN(d.getTime())
+  return {
+    code: inv.code,
+    editKey: getMine(inv.code)?.editKey || '',
+    payload: {
+      ...inv,
+      date: valid ? `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` : '',
+      time: valid ? `${pad(d.getHours())}:${pad(d.getMinutes())}` : '18:00',
+    },
+  }
+}
+
+async function loadMine() {
+  try {
+    mine.value = (await fetchMyInvitations()).map(toEntry)
+  } catch {
+    /* tarmoq bo'lmasa — forma baribir ishlaydi */
+  }
+}
 
 function applyMineEntry(entry) {
   const p = entry.payload || {}
@@ -679,13 +720,13 @@ function applyMineEntry(entry) {
 function loadForEdit(code) {
   const clean = String(code || '').replace(/[^a-z0-9]/gi, '').toUpperCase()
   if (!clean) return
-  const entry = getMine(clean)
+  const entry = mine.value.find((e) => e.code === clean) || getMine(clean)
   if (!entry) {
     editError.value = t('builder.editNoKey')
     return
   }
   applyMineEntry(entry)
-  editing.value = { code: entry.code, editKey: entry.editKey }
+  editing.value = { code: entry.code, editKey: entry.editKey || '' }
   editError.value = ''
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
@@ -693,7 +734,7 @@ function loadForEdit(code) {
 function cancelEdit() {
   editing.value = null
   editError.value = ''
-  if (route.query.edit) router.replace({ path: '/' })
+  if (route.query.edit) router.replace({ path: '/create' })
 }
 
 /* Reaktiv yorliqlar uchun til o'zgarishini kuzatish */
@@ -774,7 +815,7 @@ async function submit() {
       payload: { ...payload, date: form.date, time: form.time },
       updated_at: Date.now(),
     })
-    mine.value = listMine()
+    await loadMine()
 
     try {
       localStorage.setItem('taklifnoma:last', data.code)
@@ -835,7 +876,7 @@ function resetAll() {
   submitError.value = ''
   editing.value = null
   editError.value = ''
-  if (route.query.edit) router.replace({ path: '/' })
+  if (route.query.edit) router.replace({ path: '/create' })
   form.first_name = ''
   form.last_name = ''
   form.place = ''
@@ -849,8 +890,13 @@ function onKey(e) {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   document.title = 'Taklifnoma ✦ ' + t('builder.kicker')
+  // Taklifnoma yaratish uchun hisob kerak
+  if (!auth.token) {
+    router.replace({ path: '/', query: { login: '1', next: route.fullPath } })
+    return
+  }
   // Render bepul tarifi uxlab qolishi mumkin — forma to'ldirilayotganda
   // backendni oldindan uyg'otamiz, submit kutmaydi.
   warmUp()
@@ -859,7 +905,8 @@ onMounted(() => {
   } catch {
     lastCode.value = ''
   }
-  mine.value = listMine()
+  loadMe()
+  await loadMine()
   if (route.query.edit) loadForEdit(route.query.edit)
   window.addEventListener('keydown', onKey)
 })

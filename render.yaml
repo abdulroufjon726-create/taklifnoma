@@ -29,3 +29,13 @@ services:
       # lekin u vaqtinchalik — redeploy'da ma'lumot o'chadi.
       # - key: DATABASE_URL
       #   value: postgresql://user:pass@host:5432/dbname
+      # Google bilan kirish (Google Cloud Console → OAuth client → Web)
+      # Authorized redirect URI:
+      #   https://taklifnoma-1.onrender.com/api/auth/google/callback/
+      # - key: GOOGLE_CLIENT_ID
+      #   value: xxxx.apps.googleusercontent.com
+      # - key: GOOGLE_CLIENT_SECRET
+      #   value: xxxx
+      # Login'dan keyin qaytadigan frontend (bo'sh bo'lsa brauzer origin'i ishlatiladi)
+      # - key: FRONTEND_URL
+      #   value: https://taklifnoma-007.vercel.app

@@ -25,8 +25,27 @@ function detectBase() {
   return isLocal || isBackendHost ? '' : REMOTE_API_BASE
 }
 
-const API_BASE = detectBase()
+export const API_BASE = detectBase()
 const TIMEOUT_MS = 30000
+const TOKEN_KEY = 'taklifnoma:token'
+
+/* Kirish tokeni — Google login'dan keyin saqlanadi */
+export function getToken() {
+  try {
+    return localStorage.getItem(TOKEN_KEY) || ''
+  } catch {
+    return ''
+  }
+}
+
+export function setToken(value) {
+  try {
+    if (value) localStorage.setItem(TOKEN_KEY, value)
+    else localStorage.removeItem(TOKEN_KEY)
+  } catch {
+    /* ignore */
+  }
+}
 
 function extractDetail(data) {
   if (!data) return null
@@ -51,9 +70,13 @@ function networkError(cause) {
 async function request(path, options = {}) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
+  const headers = { ...(options.headers || {}) }
+  const token = getToken()
+  if (token) headers.Authorization = `Bearer ${token}`
   try {
     const res = await fetch(`${API_BASE}${path}`, {
       ...options,
+      headers,
       signal: controller.signal,
       // Render bepul tarif "uxlab qolgan" bo'lsa, brauzer keshini chetlab o'tamiz
       cache: options.cache || 'no-store',
@@ -261,4 +284,53 @@ export async function copyText(text) {
       return false
     }
   }
+}
+
+/* ---- Hisob: egasining taklifnomalari ---------------------------------- */
+
+/** Kirgan foydalanuvchining barcha taklifnomalari. */
+export async function fetchMyInvitations() {
+  let res
+  try {
+    res = await request('/api/invitations/mine/')
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      const err = new Error("Server javob bermadi. Qayta urinib ko'ring.")
+      err.status = 0
+      err.code = 'timeout'
+      throw err
+    }
+    throw networkError(e)
+  }
+  const data = await parse(res)
+  return data.results || []
+}
+
+/** Taklifnomani o'chirish (faqat egasi). */
+export async function deleteInvitation(code) {
+  const clean = normalizeCode(code)
+  if (!clean) throw Object.assign(new Error('Kod kiritilmagan'), { status: 404 })
+  let res
+  try {
+    res = await request(`/api/invitations/${encodeURIComponent(clean)}/`, { method: 'DELETE' })
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      const err = new Error("Server javob bermadi. Qayta urinib ko'ring.")
+      err.status = 0
+      err.code = 'timeout'
+      throw err
+    }
+    throw networkError(e)
+  }
+  if (res.status === 204) {
+    cache.delete(clean)
+    try {
+      localStorage.removeItem(`taklifnoma:inv:${clean}`)
+    } catch {
+      /* ignore */
+    }
+    return true
+  }
+  await parse(res)
+  return false
 }

@@ -3,6 +3,8 @@
    Tuzilma barcha tillarda bir xil. Kalit topilmasa — uz'ga tushadi.
    ========================================================================== */
 
+import { extra } from './extra.js'
+
 const uz = {
   nav: {
     last: 'Oxirgi:',
@@ -968,5 +970,10 @@ const en = {
   yearSuffix: ',',
 }
 
-export const dict = { uz, ru, en }
+/* Bosh sahifa / hisob / kirish tarjimalari alohida faylda */
+export const dict = {
+  uz: { ...uz, ...extra.uz },
+  ru: { ...ru, ...extra.ru },
+  en: { ...en, ...extra.en },
+}
 export const LOCALES = ['uz', 'ru', 'en']

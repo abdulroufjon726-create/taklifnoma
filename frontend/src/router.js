@@ -5,7 +5,10 @@ import { createRouter, createWebHistory } from 'vue-router'
  * builder (QR kutubxonasi, butun forma) kodini yuklamaydi — ochilish tez.
  */
 const routes = [
-  { path: '/', name: 'builder', component: () => import('./views/BuilderView.vue') },
+  { path: '/', name: 'home', component: () => import('./views/HomeView.vue') },
+  { path: '/create', name: 'builder', component: () => import('./views/BuilderView.vue') },
+  { path: '/account', name: 'account', component: () => import('./views/AccountView.vue') },
+  { path: '/auth', name: 'auth', component: () => import('./views/AuthView.vue') },
   { path: '/enter', name: 'enter', component: () => import('./views/EnterView.vue') },
   { path: '/i/:code', name: 'invitation', component: () => import('./views/InvitationView.vue') },
   { path: '/:pathMatch(.*)*', redirect: '/' },

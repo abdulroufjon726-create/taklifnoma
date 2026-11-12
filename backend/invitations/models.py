@@ -1,5 +1,6 @@
 import secrets
 
+from django.contrib.auth.models import User
 from django.db import models
 
 # Unambiguous alphabet: no 0/O and 1/I — easy to read aloud / retype.
@@ -60,6 +61,16 @@ class Invitation(models.Model):
     texts = models.JSONField(default=list, blank=True)  # selected default + custom texts
     # Har bir matn uchun shrift: {"salute": id, "names": id, "from": id, "texts": [id, ...]}
     fonts = models.JSONField(default=dict, blank=True)
+
+    # Taklifnoma egasi (Google bilan kirgan foydalanuvchi). Eski taklifnomalarda
+    # bo'sh bo'ladi — ular faqat edit_key orqali tahrirlanadi.
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="invitations",
+        null=True,
+        blank=True,
+    )
 
     # Faqat yaratuvchida saqlanadi; taklifnomani tahrirlash uchun talab qilinadi
     edit_key = models.CharField(max_length=43, unique=True, default=generate_edit_key, editable=False)
