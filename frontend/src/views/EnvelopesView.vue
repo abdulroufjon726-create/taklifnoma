@@ -7,46 +7,42 @@
 
   <SiteHeader />
 
-  <main class="acct">
-    <header class="acct-head">
+  <main class="envs">
+    <header class="envs-head">
       <div>
-        <p class="acct-kicker">{{ t('auth.account') }}</p>
-        <h1 class="acct-title">{{ t('account.title') }}</h1>
-        <p class="acct-sub">{{ t('account.sub') }}</p>
+        <p class="envs-kicker">{{ t('nav.envelopes') }}</p>
+        <h1 class="envs-title">{{ t('envelopes.title') }}</h1>
+        <p class="envs-sub">{{ t('envelopes.sub') }}</p>
       </div>
-      <div class="acct-actions">
-        <span v-if="items.length" class="count-pill">{{ tf('account.count', { n: items.length }) }}</span>
+      <div class="envs-actions">
+        <span v-if="items.length" class="count-pill">{{ tf('envelopes.count', { n: items.length }) }}</span>
         <RouterLink to="/create" class="btn btn-primary">
           <AppIcon name="ph:plus" />
-          {{ t('account.newBtn') }}
+          {{ t('envelopes.newBtn') }}
         </RouterLink>
       </div>
     </header>
 
-    <!-- Yuklanmoqda -->
     <div v-if="loading" class="grid-cards">
       <div v-for="n in 3" :key="n" class="skeleton"></div>
     </div>
 
-    <!-- Xato -->
     <div v-else-if="error" class="glass card state-card">
       <AppIcon name="ph:warning-circle" size="1.8rem" class="text-amber-300" />
-      <p>{{ t('account.err') }}</p>
-      <button class="btn btn-ghost" @click="load">{{ t('account.retry') }}</button>
+      <p>{{ t('envelopes.err') }}</p>
+      <button class="btn btn-ghost" @click="load">{{ t('envelopes.retry') }}</button>
     </div>
 
-    <!-- Bo'sh -->
     <div v-else-if="!items.length" class="glass card state-card empty-card">
       <span class="empty-icn"><AppIcon name="ph:envelope-simple" size="1.6rem" /></span>
-      <h2>{{ t('account.empty') }}</h2>
-      <p>{{ t('account.emptySub') }}</p>
+      <h2>{{ t('envelopes.empty') }}</h2>
+      <p>{{ t('envelopes.emptySub') }}</p>
       <RouterLink to="/create" class="btn btn-primary">
         <AppIcon name="ph:sparkle" />
-        {{ t('account.newBtn') }}
+        {{ t('envelopes.newBtn') }}
       </RouterLink>
     </div>
 
-    <!-- Kartalar: ekran eniga 3 ta -->
     <template v-else>
       <div class="grid-cards">
         <article
@@ -66,77 +62,74 @@
           <p class="card-names" :style="{ fontFamily: fontStack(inv.fonts?.names) }">
             {{ inv.first_name }} {{ inv.last_name }}
           </p>
-          <p class="card-text" :style="{ fontFamily: fontStack(inv.fonts?.salute) }">
-            {{ firstText(inv) }}
-          </p>
+          <p class="card-text" :style="{ fontFamily: fontStack(inv.fonts?.salute) }">{{ firstText(inv) }}</p>
           <div class="card-meta">
             <span>{{ formatDate(inv.event_at) }}</span>
             <span class="card-code">{{ prettyCode(inv.code) }}</span>
           </div>
-          <span class="card-views">
-            <AppIcon name="ph:eye" size="0.9em" /> {{ inv.views }}
-          </span>
+          <span class="card-views"><AppIcon name="ph:eye" size="0.9em" /> {{ inv.views }}</span>
         </article>
       </div>
-      <p class="hint">{{ t('account.editHint') }}</p>
+      <p class="hint">{{ t('envelopes.hint') }}</p>
     </template>
   </main>
 
-  <!-- ============ Pop-up: tahrirlash / o'chirish ============ -->
   <Teleport to="body">
     <div v-if="selected" class="modal-backdrop" @click.self="closeModal">
-        <div class="modal" role="dialog" aria-modal="true">
-          <button class="modal-x" :aria-label="t('account.close')" @click="closeModal">✕</button>
+      <div class="modal" role="dialog" aria-modal="true">
+        <button class="modal-x" :aria-label="t('account.close')" @click="closeModal">✕</button>
 
-          <div class="modal-preview" :style="previewStyle(selected)">
-            <span class="sheen"></span>
-            <p class="card-kicker">✦ INVITATION ✦</p>
-            <p class="card-names big" :style="{ fontFamily: fontStack(selected.fonts?.names) }">
-              {{ selected.first_name }} {{ selected.last_name }}
-            </p>
-            <p class="modal-to" :style="{ fontFamily: fontStack(selected.fonts?.to || selected.fonts?.from) }">
-              {{ selected.to_name }}
-            </p>
-            <p class="modal-date">{{ formatDate(selected.event_at) }}</p>
-            <p v-if="selected.place" class="modal-place">{{ selected.place }}</p>
+        <div class="modal-preview" :style="previewStyle(selected)">
+          <span class="sheen"></span>
+          <p class="card-kicker">✦ INVITATION ✦</p>
+          <p class="card-names big" :style="{ fontFamily: fontStack(selected.fonts?.names) }">
+            {{ selected.first_name }} {{ selected.last_name }}
+          </p>
+          <p class="modal-to">{{ selected.to_name }}</p>
+          <p class="modal-date">{{ formatDate(selected.event_at) }}</p>
+          <p v-if="selected.place" class="modal-place">{{ selected.place }}</p>
+        </div>
+
+        <div class="modal-body">
+          <div class="modal-facts">
+            <span class="fact"><b>{{ prettyCode(selected.code) }}</b> · {{ t('envelope.code') }}</span>
+            <span class="fact">{{ tf('envelopes.views', { n: selected.views }) }}</span>
           </div>
 
-          <div class="modal-body">
-            <div class="modal-facts">
-              <span class="fact"><b>{{ prettyCode(selected.code) }}</b> · code</span>
-              <span class="fact">{{ tf('account.views', { n: selected.views }) }}</span>
+          <template v-if="!confirming">
+            <div class="modal-actions">
+              <button class="btn btn-primary" @click="edit(selected)">
+                <AppIcon name="ph:pencil-simple" />
+                {{ t('account.edit') }}
+              </button>
+              <button class="btn btn-ghost" @click="openPage(selected)">
+                <AppIcon name="ph:arrow-up-right" />
+                {{ t('account.open') }}
+              </button>
+              <button class="btn btn-danger" @click="confirming = true">
+                <AppIcon name="ph:trash" />
+                {{ t('account.delete') }}
+              </button>
             </div>
+            <RouterLink :to="`/i/${selected.code}`" class="modal-open">
+              {{ t('envelope.open') }} →
+            </RouterLink>
+          </template>
 
-            <template v-if="!confirming">
-              <div class="modal-actions">
-                <button class="btn btn-primary" @click="edit(selected)">
-                  <AppIcon name="ph:pencil-simple" />
-                  {{ t('account.edit') }}
-                </button>
-                <button class="btn btn-danger" @click="confirming = true">
-                  <AppIcon name="ph:trash" />
-                  {{ t('account.delete') }}
-                </button>
-              </div>
-              <RouterLink :to="`/i/${selected.code}`" class="modal-open">
-                {{ t('account.open') }} →
-              </RouterLink>
-            </template>
-
-            <div v-else class="confirm">
-              <p class="confirm-title">{{ t('account.confirm') }}</p>
-              <p class="confirm-sub">{{ t('account.confirmSub') }}</p>
-              <div class="modal-actions">
-                <button class="btn btn-danger" :disabled="deleting" @click="remove(selected)">
-                  {{ deleting ? t('account.deleting') : t('account.delete') }}
-                </button>
-                <button class="btn btn-ghost" :disabled="deleting" @click="confirming = false">
-                  {{ t('account.cancel') }}
-                </button>
-              </div>
+          <div v-else class="confirm">
+            <p class="confirm-title">{{ t('account.confirm') }}</p>
+            <p class="confirm-sub">{{ t('account.confirmSub') }}</p>
+            <div class="modal-actions">
+              <button class="btn btn-danger" :disabled="deleting" @click="remove(selected)">
+                {{ deleting ? t('account.deleting') : t('account.delete') }}
+              </button>
+              <button class="btn btn-ghost" :disabled="deleting" @click="confirming = false">
+                {{ t('account.cancel') }}
+              </button>
             </div>
           </div>
         </div>
+      </div>
     </div>
   </Teleport>
 </template>
@@ -146,7 +139,7 @@ import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { deleteInvitation, fetchMyInvitations } from '../api.js'
-import { auth, loadMe, signIn } from '../auth.js'
+import { auth, loadMe } from '../auth.js'
 import { THEMES, fontStack, prettyCode } from '../data/catalog.js'
 import { formatDate, useI18n } from '../i18n/index.js'
 import AppIcon from '../components/AppIcon.vue'
@@ -183,9 +176,7 @@ function cardStyle(inv, i) {
   }
 }
 
-function previewStyle(inv) {
-  return cardStyle(inv, 0)
-}
+const previewStyle = (inv) => cardStyle(inv, 0)
 
 async function load() {
   loading.value = true
@@ -194,13 +185,17 @@ async function load() {
     const [list] = await Promise.all([fetchMyInvitations(), auth.user ? null : loadMe()])
     items.value = list
   } catch (e) {
+    if (e && (e.status === 401 || e.status === 403)) {
+      router.replace({ path: '/login', query: { next: '/envelopes' } })
+      return
+    }
     error.value = e?.message || 'error'
   } finally {
     loading.value = false
   }
 }
 
-function open(inv) {
+const open = (inv) => {
   selected.value = inv
   confirming.value = false
 }
@@ -210,9 +205,8 @@ function closeModal() {
   confirming.value = false
 }
 
-function edit(inv) {
-  router.push({ path: '/create', query: { edit: inv.code } })
-}
+const edit = (inv) => router.push({ path: '/create', query: { edit: inv.code } })
+const openPage = (inv) => router.push(`/envelopes/${inv.code}`)
 
 async function remove(inv) {
   deleting.value = true
@@ -233,21 +227,21 @@ async function remove(inv) {
 }
 
 onMounted(() => {
-  document.title = 'Taklifnoma ✦ ' + t('account.title')
+  document.title = 'Taklifnoma ✦ ' + t('envelopes.title')
   if (!auth.token) {
-    router.replace({ path: '/', query: { login: '1', next: '/account' } })
+    router.replace({ path: '/login', query: { next: '/envelopes' } })
     return
   }
   load()
 })
 
 watch(locale, () => {
-  document.title = 'Taklifnoma ✦ ' + t('account.title')
+  document.title = 'Taklifnoma ✦ ' + t('envelopes.title')
 })
 </script>
 
 <style scoped>
-.acct {
+.envs {
   position: relative;
   z-index: 1;
   margin: 0 auto;
@@ -255,11 +249,11 @@ watch(locale, () => {
   padding: 2.4rem 1.1rem 4rem;
 }
 @media (min-width: 640px) {
-  .acct {
+  .envs {
     padding: 3rem 1.5rem 5rem;
   }
 }
-.acct-head {
+.envs-head {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -267,25 +261,25 @@ watch(locale, () => {
   gap: 1.2rem;
   margin-bottom: 2rem;
 }
-.acct-kicker {
+.envs-kicker {
   font-size: 0.7rem;
   letter-spacing: 0.32em;
   text-transform: uppercase;
   color: rgba(196, 181, 253, 0.8);
 }
-.acct-title {
+.envs-title {
   margin-top: 0.35rem;
   font-family: var(--font-display);
   font-size: clamp(1.9rem, 4.4vw, 2.8rem);
   font-weight: 600;
 }
-.acct-sub {
+.envs-sub {
   margin-top: 0.4rem;
   max-width: 32rem;
   font-size: 0.88rem;
   color: rgba(255, 255, 255, 0.5);
 }
-.acct-actions {
+.envs-actions {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -299,7 +293,7 @@ watch(locale, () => {
   color: rgba(255, 255, 255, 0.65);
 }
 
-/* ---- 3 ta karta bir qatorda ---- */
+/* 3 ta karta bir qatorda */
 .grid-cards {
   display: grid;
   gap: 1rem;
@@ -436,7 +430,6 @@ watch(locale, () => {
   color: rgba(255, 255, 255, 0.35);
 }
 
-/* ---- states ---- */
 .skeleton {
   height: 12.5rem;
   border-radius: 1.25rem;
@@ -477,7 +470,7 @@ watch(locale, () => {
   border: 1px solid rgba(245, 196, 81, 0.35);
 }
 
-/* ---- modal ---- */
+/* modal */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -488,6 +481,12 @@ watch(locale, () => {
   background: rgba(6, 5, 12, 0.68);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  animation: backdropIn 0.22s ease both;
+}
+@keyframes backdropIn {
+  from {
+    opacity: 0;
+  }
 }
 .modal {
   position: relative;
@@ -498,6 +497,13 @@ watch(locale, () => {
   background: #12101f;
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 50px 100px -40px rgba(0, 0, 0, 0.95);
+  animation: modalIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
 }
 .modal-x {
   position: absolute;
@@ -574,9 +580,9 @@ watch(locale, () => {
   gap: 0.6rem;
 }
 .modal-actions .btn {
-  flex: 1 1 8rem;
-  padding: 0.75rem 1rem;
-  font-size: 0.88rem;
+  flex: 1 1 7rem;
+  padding: 0.72rem 0.9rem;
+  font-size: 0.84rem;
   border-radius: 0.95rem;
 }
 .btn-danger {
@@ -614,28 +620,11 @@ watch(locale, () => {
   color: rgba(255, 255, 255, 0.55);
 }
 
-/* ---- modal kirish animatsiyasi (chiqishi darhol) ---- */
-.modal-backdrop {
-  animation: backdropIn 0.22s ease both;
-}
-.modal {
-  animation: modalIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-@keyframes backdropIn {
-  from {
-    opacity: 0;
-  }
-}
-@keyframes modalIn {
-  from {
-    opacity: 0;
-    transform: translateY(14px) scale(0.96);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .inv-card,
-  .skeleton {
+  .skeleton,
+  .modal,
+  .modal-backdrop {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;

@@ -1,10 +1,12 @@
 import json
 import logging
 import os
+import re
 import urllib.parse
 import urllib.request
 
 from django.conf import settings
+from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.core import signing
 from django.http import HttpResponseRedirect
@@ -66,6 +68,7 @@ def _user_payload(user) -> dict:
         "first_name": user.first_name,
         "last_name": user.last_name,
         "invitations": user.invitations.count(),
+        "has_password": user.has_usable_password(),
     }
 
 
@@ -189,3 +192,61 @@ def logout(request):
 def auth_config(request):
     """Frontend Google tugmasini ko'rsatishi uchun: sozlanganmi?"""
     return Response({"google": bool(getattr(settings, "GOOGLE_CLIENT_ID", ""))})
+
+
+# ---- Email + parol bilan kirish -----------------------------------------
+# Google kalitlari sozlanmagan bo'lsa ham sayt to'liq ishlashi uchun.
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def _auth_payload(user):
+    token = AuthToken.issue(user)
+    return {"token": token.key, "user": _user_payload(user)}
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def register(request):
+    email = str(request.data.get("email", "")).strip().lower()
+    password = str(request.data.get("password", ""))
+    name = str(request.data.get("name", "")).strip()[:150]
+
+    if not EMAIL_RE.match(email):
+        return Response(
+            {"code": "invalid_email", "detail": "Email manzil noto'g'ri."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if len(password) < 8:
+        return Response(
+            {"code": "weak_password", "detail": "Parol kamida 8 belgidan iborat bo'lsin."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if User.objects.filter(username=email).exists():
+        return Response(
+            {"code": "email_taken", "detail": "Bu email allaqachon ro'yxatdan o'tgan."},
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    parts = name.split(" ", 1)
+    user = User.objects.create_user(
+        username=email,
+        email=email,
+        password=password,
+        first_name=parts[0][:150],
+        last_name=(parts[1] if len(parts) > 1 else "")[:150],
+    )
+    return Response(_auth_payload(user), status=status.HTTP_201_CREATED)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def password_login(request):
+    email = str(request.data.get("email", "")).strip().lower()
+    password = str(request.data.get("password", ""))
+    user = authenticate(request, username=email, password=password)
+    if not user or not user.is_active:
+        return Response(
+            {"code": "bad_credentials", "detail": "Email yoki parol noto'g'ri."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    return Response(_auth_payload(user))

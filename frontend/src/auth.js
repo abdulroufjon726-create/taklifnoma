@@ -86,3 +86,53 @@ export async function signOut() {
     /* tarmoq bo'lmasa ham chiqamiz */
   }
 }
+
+/* ---- Email + parol bilan kirish ---------------------------------------- */
+export const authConfig = reactive({ google: false, loaded: false })
+
+export async function loadAuthConfig(force = false) {
+  if (authConfig.loaded && !force) return authConfig
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/config/`, { cache: 'no-store' })
+    const data = await readJson(res)
+    authConfig.google = Boolean(data && data.google)
+  } catch {
+    authConfig.google = false
+  }
+  authConfig.loaded = true
+  return authConfig
+}
+
+async function authPost(path, payload) {
+  let res
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      cache: 'no-store',
+    })
+  } catch {
+    const err = new Error('network')
+    err.code = 'network'
+    throw err
+  }
+  const data = await readJson(res)
+  if (!res.ok) {
+    const err = new Error((data && data.detail) || 'auth failed')
+    err.code = (data && data.code) || 'default'
+    err.status = res.status
+    throw err
+  }
+  saveToken(data.token)
+  auth.user = data.user
+  return data.user
+}
+
+export function passwordLogin(email, password) {
+  return authPost('/api/auth/login/', { email, password })
+}
+
+export function registerAccount(name, email, password) {
+  return authPost('/api/auth/register/', { name, email, password })
+}

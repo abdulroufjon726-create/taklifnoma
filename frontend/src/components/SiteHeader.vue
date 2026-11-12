@@ -9,28 +9,25 @@
       <nav class="head-nav">
         <RouterLink v-if="!onBuilder" to="/create" class="btn btn-ghost head-cta">
           <AppIcon name="ph:sparkle" />
-          <span class="hidden sm:inline">{{ t('account.newBtn') }}</span>
+          <span class="hidden sm:inline">{{ t('nav.create') }}</span>
         </RouterLink>
-        <RouterLink v-if="auth.token" to="/account" class="btn btn-ghost head-cta">
-          <AppIcon name="ph:user-circle" />
-          <span class="hidden sm:inline">{{ t('auth.account') }}</span>
+        <RouterLink v-if="auth.token" to="/envelopes" class="btn btn-ghost head-cta">
+          <AppIcon name="ph:envelope-simple" />
+          <span class="hidden sm:inline">{{ t('nav.envelopes') }}</span>
         </RouterLink>
         <LangSwitch />
 
-        <div v-if="auth.token" class="head-user">
+        <RouterLink v-if="auth.token" to="/account" class="head-user" :title="name">
           <span class="avatar">{{ initial }}</span>
           <div class="hidden leading-tight sm:block">
             <p class="max-w-[9rem] truncate text-xs font-semibold text-white/90">{{ name }}</p>
-            <button class="text-[0.68rem] text-white/45 transition hover:text-white/80" @click="logout">
-              {{ t('auth.logout') }}
-            </button>
+            <span class="text-[0.68rem] text-white/45">{{ t('nav.account') }}</span>
           </div>
-        </div>
-        <button v-else class="btn btn-primary head-login" @click="startLogin">
-          <AppIcon name="ph:google-logo" />
-          <span class="hidden sm:inline">{{ t('auth.googleBtn') }}</span>
-          <span class="sm:hidden">Google</span>
-        </button>
+        </RouterLink>
+        <RouterLink v-else :to="loginTo" class="btn btn-primary head-login" :aria-label="t('nav.login')">
+          <AppIcon name="ph:sign-in" />
+          <span class="hidden sm:inline">{{ t('nav.login') }}</span>
+        </RouterLink>
       </nav>
     </div>
   </header>
@@ -40,7 +37,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { auth, signIn, signOut } from '../auth.js'
+import { auth } from '../auth.js'
 import { useI18n } from '../i18n/index.js'
 import AppIcon from './AppIcon.vue'
 import LangSwitch from './LangSwitch.vue'
@@ -51,17 +48,7 @@ const route = useRoute()
 const onBuilder = computed(() => route.name === 'builder')
 const name = computed(() => auth.user?.name || auth.user?.email || '')
 const initial = computed(() => (name.value || '?').trim().charAt(0).toUpperCase())
-
-function startLogin() {
-  signIn('/create')
-}
-
-async function logout() {
-  await signOut()
-  if (route.name === 'account' || route.name === 'builder') {
-    window.location.href = '/'
-  }
-}
+const loginTo = computed(() => ({ path: '/login', query: { next: '/envelopes' } }))
 </script>
 
 <style scoped>
@@ -140,6 +127,12 @@ async function logout() {
   align-items: center;
   gap: 0.55rem;
   padding-left: 0.35rem;
+  border-radius: 0.9rem;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.head-user:hover {
+  opacity: 0.85;
 }
 .avatar {
   display: grid;

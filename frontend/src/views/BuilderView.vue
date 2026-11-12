@@ -25,9 +25,9 @@
           <AppIcon name="ph:lock-key" />
           <span class="hidden sm:inline">{{ t('nav.enterCode') }}</span>
         </RouterLink>
-        <RouterLink to="/account" class="btn btn-ghost !px-3 !py-2 text-sm sm:!px-4">
-          <AppIcon name="ph:user-circle" />
-          <span class="hidden sm:inline">{{ t('auth.account') }}</span>
+        <RouterLink to="/envelopes" class="btn btn-ghost !px-3 !py-2 text-sm sm:!px-4">
+          <AppIcon name="ph:envelope-simple" />
+          <span class="hidden sm:inline">{{ t('nav.envelopes') }}</span>
         </RouterLink>
         <LangSwitch />
       </nav>
@@ -54,8 +54,8 @@
         <div v-if="mine.length || editError" class="glass card">
           <div class="flex items-center justify-between gap-3">
             <h2 class="section-title"><span class="num">↺</span> {{ t('builder.mineTitle') }}</h2>
-            <RouterLink to="/account" class="text-xs text-white/45 transition hover:text-gold">
-              {{ t('account.title') }} →
+            <RouterLink to="/envelopes" class="text-xs text-white/45 transition hover:text-gold">
+              {{ t('nav.envelopes') }} →
             </RouterLink>
           </div>
           <p v-if="editError" class="mt-3 rounded-xl border border-amber-300/30 bg-amber-300/10 px-4 py-2.5 text-xs leading-relaxed text-amber-200">
@@ -434,7 +434,7 @@ import {
   copyText,
   warmUp,
 } from '../api.js'
-import { auth, loadMe } from '../auth.js'
+import { auth, loadMe, signOutLocal } from '../auth.js'
 import { getMine, saveMine } from '../data/mine.js'
 import { useI18n, tf } from '../i18n/index.js'
 import {
@@ -688,8 +688,12 @@ function toEntry(inv) {
 async function loadMine() {
   try {
     mine.value = (await fetchMyInvitations()).map(toEntry)
-  } catch {
-    /* tarmoq bo'lmasa — forma baribir ishlaydi */
+  } catch (e) {
+    if (e && e.status === 401) {
+      signOutLocal()
+      router.replace({ path: '/login', query: { next: route.fullPath } })
+    }
+    /* boshqa xatolarda forma baribir ishlaydi */
   }
 }
 
@@ -824,6 +828,12 @@ async function submit() {
     }
     showFullscreen.value = false
   } catch (e) {
+    if (e.status === 401) {
+      // Sessiya tugagan — qayta kirishga yuboramiz
+      signOutLocal()
+      router.replace({ path: '/login', query: { next: '/create' } })
+      return
+    }
     if (e.status === 429) {
       submitError.value = t('builder.err429')
     } else {
@@ -894,7 +904,7 @@ onMounted(async () => {
   document.title = 'Taklifnoma ✦ ' + t('builder.kicker')
   // Taklifnoma yaratish uchun hisob kerak
   if (!auth.token) {
-    router.replace({ path: '/', query: { login: '1', next: route.fullPath } })
+    router.replace({ path: '/login', query: { next: route.fullPath } })
     return
   }
   // Render bepul tarifi uxlab qolishi mumkin — forma to'ldirilayotganda

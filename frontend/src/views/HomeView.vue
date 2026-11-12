@@ -121,8 +121,8 @@
         <h2>{{ t('home.ctaTitle') }}</h2>
         <p>{{ t('home.ctaSub') }}</p>
         <button class="btn btn-primary" @click="create">
-          <AppIcon name="ph:google-logo" />
-          {{ auth.token ? t('home.cta') : t('auth.googleBtn') }}
+          <AppIcon name="ph:sparkle" />
+          {{ auth.token ? t('home.cta') : t('nav.login') }}
         </button>
       </div>
     </section>
@@ -136,10 +136,10 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { auth, loadMe, signIn } from '../auth.js'
+import { auth, loadMe } from '../auth.js'
 import { THEMES } from '../data/catalog.js'
 import { useI18n } from '../i18n/index.js'
 import AppIcon from '../components/AppIcon.vue'
@@ -171,6 +171,7 @@ const loginNotice = computed(() => {
   const err = route.query.auth_error
   if (!err) return ''
   if (err === 'google_not_configured') return t('auth.notConfigured')
+  if (err === 'google_email') return t('login.err.invalid_email')
   return t('auth.failed')
 })
 
@@ -180,12 +181,10 @@ onMounted(() => {
 })
 
 function create() {
-  if (auth.token) router.push('/create')
-  else signIn('/create')
+  router.push(auth.token ? '/create' : '/login?next=/create')
 }
 
 // til o'zgarganda sarlavha yangilanadi
-import { watch } from 'vue'
 watch(locale, () => {
   document.title = 'Taklifnoma ✦ ' + t('home.badge')
 })
