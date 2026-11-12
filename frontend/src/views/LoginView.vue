@@ -20,6 +20,9 @@
         class="btn google-btn"
         type="button"
         :class="{ 'google-off': !authConfig.google }"
+        :disabled="!authConfig.google"
+        :aria-disabled="!authConfig.google"
+        :title="authConfig.google ? '' : t('login.googleOff')"
         @click="google"
       >
         <AppIcon name="ph:google-logo" />
