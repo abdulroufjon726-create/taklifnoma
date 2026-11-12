@@ -4,12 +4,15 @@ import os
 import re
 import urllib.parse
 import urllib.request
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.core import signing
+from django.db.models import Q
 from django.http import HttpResponseRedirect
+from django.utils import timezone
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -17,7 +20,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from .auth import user_from_request
-from .models import AuthToken
+from .models import AuthToken, LoginAttempt
 
 logger = logging.getLogger(__name__)
 
@@ -198,6 +201,32 @@ def auth_config(request):
 # Google kalitlari sozlanmagan bo'lsa ham sayt to'liq ishlashi uchun.
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
+# Parol urinishlarini cheklash: 15 daqiqada 5 marta xato -> 429
+LOGIN_WINDOW = timedelta(minutes=15)
+LOGIN_MAX_FAILURES = 5
+ATTEMPT_RETENTION = timedelta(days=2)
+
+
+def _client_ip(request):
+    forwarded = (request.META.get("HTTP_X_FORWARDED_FOR") or "").strip()
+    if forwarded:
+        return forwarded.split(",")[0].strip()[:45] or None
+    return (request.META.get("REMOTE_ADDR") or "").strip()[:45] or None
+
+
+def _too_many_failures(identifier: str, ip: str | None) -> bool:
+    since = timezone.now() - LOGIN_WINDOW
+    fails = LoginAttempt.objects.filter(
+        identifier=identifier, ok=False, created_at__gte=since
+    )
+    if ip:
+        fails = fails.filter(Q(ip=ip) | Q(ip__isnull=True))
+    return fails.count() >= LOGIN_MAX_FAILURES
+
+
+def _prune_attempts():
+    LoginAttempt.objects.filter(created_at__lt=timezone.now() - ATTEMPT_RETENTION).delete()
+
 
 def _auth_payload(user):
     token = AuthToken.issue(user)
@@ -235,6 +264,7 @@ def register(request):
         first_name=parts[0][:150],
         last_name=(parts[1] if len(parts) > 1 else "")[:150],
     )
+    AuthToken.purge_expired()
     return Response(_auth_payload(user), status=status.HTTP_201_CREATED)
 
 
@@ -243,10 +273,27 @@ def register(request):
 def password_login(request):
     email = str(request.data.get("email", "")).strip().lower()
     password = str(request.data.get("password", ""))
+    ip = _client_ip(request)
+
+    if _too_many_failures(email, ip):
+        return Response(
+            {
+                "code": "too_many_attempts",
+                "detail": "Juda ko'p urinish. 15 daqiqadan keyin qayta urinib ko'ring.",
+            },
+            status=status.HTTP_429_TOO_MANY_REQUESTS,
+        )
+
     user = authenticate(request, username=email, password=password)
     if not user or not user.is_active:
+        LoginAttempt.objects.create(identifier=email, ip=ip, ok=False)
+        _prune_attempts()
         return Response(
             {"code": "bad_credentials", "detail": "Email yoki parol noto'g'ri."},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+    # Muvaffaqiyatli kirish — shu hisobning xato urinishlari tozalanadi
+    LoginAttempt.objects.filter(identifier=email, ok=False).delete()
+    AuthToken.purge_expired()
     return Response(_auth_payload(user))

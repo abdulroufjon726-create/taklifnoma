@@ -8,6 +8,8 @@ const routes = [
   { path: '/', name: 'home', component: () => import('./views/HomeView.vue') },
   { path: '/create', name: 'builder', component: () => import('./views/BuilderView.vue') },
   { path: '/login', name: 'login', component: () => import('./views/LoginView.vue') },
+  { path: '/register', name: 'register', component: () => import('./views/LoginView.vue') },
+  { path: '/start', name: 'start', component: () => import('./views/StartView.vue') },
   { path: '/envelopes', name: 'envelopes', component: () => import('./views/EnvelopesView.vue') },
   {
     path: '/envelopes/:code',

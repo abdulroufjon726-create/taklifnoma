@@ -59,6 +59,7 @@
         >
           <span class="sheen"></span>
           <p class="card-kicker">✦ INVITATION</p>
+          <p v-if="inv.legacy" class="legacy-badge">{{ t('legacy.badge') }}</p>
           <p class="card-names" :style="{ fontFamily: fontStack(inv.fonts?.names) }">
             {{ inv.first_name }} {{ inv.last_name }}
           </p>
@@ -102,7 +103,7 @@
                 <AppIcon name="ph:pencil-simple" />
                 {{ t('account.edit') }}
               </button>
-              <button class="btn btn-ghost" @click="openPage(selected)">
+              <button v-if="!selected.legacy" class="btn btn-ghost" @click="openPage(selected)">
                 <AppIcon name="ph:arrow-up-right" />
                 {{ t('account.open') }}
               </button>
@@ -138,8 +139,9 @@
 import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { deleteInvitation, fetchMyInvitations } from '../api.js'
+import { claimInvitation, deleteInvitation, fetchMyInvitations } from '../api.js'
 import { auth, loadMe } from '../auth.js'
+import { listMine, removeMine } from '../data/mine.js'
 import { THEMES, fontStack, prettyCode } from '../data/catalog.js'
 import { formatDate, useI18n } from '../i18n/index.js'
 import AppIcon from '../components/AppIcon.vue'
@@ -178,12 +180,73 @@ function cardStyle(inv, i) {
 
 const previewStyle = (inv) => cardStyle(inv, 0)
 
+/* Login'dan oldin yaratilgan (egasiz) taklifnoma yozuvini karta shakliga
+   aylantiradi — u faqat shu qurilmada, edit_key bilan tahrirlanadi. */
+function legacyToInvitation(entry) {
+  const p = entry.payload || {}
+  const date = p.date || ''
+  const time = p.time || '18:00'
+  const parsed = date ? new Date(`${date}T${time}:00`) : new Date(entry.updated_at || Date.now())
+  const iso = Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString()
+  return {
+    code: entry.code,
+    first_name: p.first_name || '',
+    last_name: p.last_name || '',
+    to_name: p.to_name || '',
+    from_name: p.from_name || '',
+    event_at: iso,
+    place: p.place || '',
+    theme: p.theme || 'gold',
+    texts: Array.isArray(p.texts) ? p.texts : [],
+    fonts: p.fonts || {},
+    ambient_effects: p.ambient_effects || [],
+    particle_effects: p.particle_effects || [],
+    views: 0,
+    created_at: new Date(entry.updated_at || Date.now()).toISOString(),
+    legacy: true,
+    editKey: entry.editKey || '',
+  }
+}
+
 async function load() {
   loading.value = true
   error.value = ''
   try {
     const [list] = await Promise.all([fetchMyInvitations(), auth.user ? null : loadMe()])
-    items.value = list
+
+    // Shu qurilmada saqlangan, hali egasi yo'q taklifnomalar
+    const local = listMine()
+    const known = new Set(list.map((i) => i.code))
+    const pending = local.filter((e) => !known.has(e.code))
+
+    // Kaliti borlarini hisobga avtomatik bog'laymiz.
+    // 409 = boshqa hisobga tegishli -> bu ro'yxatda ko'rsatilmaydi.
+    const foreign = new Set()
+    await Promise.all(
+      pending.map(async (e) => {
+        try {
+          await claimInvitation(e.code, e.editKey)
+        } catch (err) {
+          if (err && err.status === 409) foreign.add(e.code)
+          /* qolgan holatlarda pastda lokal karta sifatida ko'rsatamiz */
+        }
+      }),
+    )
+
+    let merged = list
+    if (pending.length) {
+      try {
+        merged = await fetchMyInvitations()
+      } catch {
+        /* eski ro'yxat bilan davom etamiz */
+      }
+    }
+
+    const after = new Set(merged.map((i) => i.code))
+    const extras = pending
+      .filter((e) => !after.has(e.code) && !foreign.has(e.code))
+      .map(legacyToInvitation)
+    items.value = [...merged, ...extras]
   } catch (e) {
     if (e && (e.status === 401 || e.status === 403)) {
       router.replace({ path: '/login', query: { next: '/envelopes' } })
@@ -211,7 +274,8 @@ const openPage = (inv) => router.push(`/envelopes/${inv.code}`)
 async function remove(inv) {
   deleting.value = true
   try {
-    await deleteInvitation(inv.code)
+    await deleteInvitation(inv.code, inv.editKey || '')
+    if (inv.legacy) removeMine(inv.code)
     leaving.value.add(inv.code)
     setTimeout(() => {
       items.value = items.value.filter((x) => x.code !== inv.code)
@@ -428,6 +492,18 @@ watch(locale, () => {
   margin-top: 1.1rem;
   font-size: 0.76rem;
   color: rgba(255, 255, 255, 0.35);
+}
+.legacy-badge {
+  position: relative;
+  display: inline-block;
+  margin-top: 0.35rem;
+  border-radius: 999px;
+  padding: 0.12rem 0.55rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  color: var(--ac);
+  border: 1px solid color-mix(in srgb, var(--ac) 40%, transparent);
+  background: rgba(0, 0, 0, 0.22);
 }
 
 .skeleton {

@@ -139,3 +139,43 @@ def invitation_mine(request):
     )
     data = InvitationSerializer(items, many=True).data
     return Response({"count": len(data), "results": data})
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def invitation_claim(request, code):
+    """Login'dan oldin yaratilgan (egasiz) taklifnomani hisobga bog'lash.
+
+    Faqat o'sha qurilmada saqlangan edit_key bilan — begona odam boshqa
+    taklifnomani o'z hisobiga tortib ola olmaydi.
+    """
+    user = user_from_request(request)
+    if not user:
+        return Response({"detail": "Kirish talab qilinadi."}, status=status.HTTP_401_UNAUTHORIZED)
+
+    normalized = "".join(ch for ch in code.upper() if ch.isalnum())
+    if len(normalized) != 8:
+        raise NotFound("Bunday kodli taklifnoma topilmadi.")
+    try:
+        invitation = Invitation.objects.get(code=normalized)
+    except Invitation.DoesNotExist:
+        raise NotFound("Bunday kodli taklifnoma topilmadi.")
+
+    if invitation.owner_id == user.id:
+        return Response(InvitationSerializer(invitation).data)
+    if invitation.owner_id:
+        return Response(
+            {"detail": "Bu taklifnoma boshqa hisobga bog'langan."},
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    key = request.headers.get("X-Edit-Key", "")
+    if not key or not secrets.compare_digest(key, invitation.edit_key):
+        return Response(
+            {"detail": "Tahrirlash kaliti noto'g'ri."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    invitation.owner = user
+    invitation.save(update_fields=["owner"])
+    return Response(InvitationSerializer(invitation).data)

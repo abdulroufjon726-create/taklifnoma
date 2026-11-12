@@ -307,12 +307,13 @@ export async function fetchMyInvitations() {
 }
 
 /** Taklifnomani o'chirish (faqat egasi). */
-export async function deleteInvitation(code) {
+export async function deleteInvitation(code, editKey = '') {
   const clean = normalizeCode(code)
   if (!clean) throw Object.assign(new Error('Kod kiritilmagan'), { status: 404 })
+  const headers = editKey ? { 'X-Edit-Key': editKey } : {}
   let res
   try {
-    res = await request(`/api/invitations/${encodeURIComponent(clean)}/`, { method: 'DELETE' })
+    res = await request(`/api/invitations/${encodeURIComponent(clean)}/`, { method: 'DELETE', headers })
   } catch (e) {
     if (e.name === 'AbortError') {
       const err = new Error("Server javob bermadi. Qayta urinib ko'ring.")
@@ -333,4 +334,20 @@ export async function deleteInvitation(code) {
   }
   await parse(res)
   return false
+}
+
+/** Login'dan oldin yaratilgan (egasiz) taklifnomani hisobga bog'lash. */
+export async function claimInvitation(code, editKey) {
+  const clean = normalizeCode(code)
+  if (!clean) throw Object.assign(new Error('Kod kiritilmagan'), { status: 404 })
+  let res
+  try {
+    res = await request(`/api/invitations/${encodeURIComponent(clean)}/claim/`, {
+      method: 'POST',
+      headers: { 'X-Edit-Key': editKey || '' },
+    })
+  } catch (e) {
+    throw networkError(e)
+  }
+  return parse(res)
 }

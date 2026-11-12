@@ -7,13 +7,10 @@
       </RouterLink>
 
       <nav class="head-nav">
-        <RouterLink v-if="!onBuilder" to="/create" class="btn btn-ghost head-cta">
-          <AppIcon name="ph:sparkle" />
-          <span class="hidden sm:inline">{{ t('nav.create') }}</span>
-        </RouterLink>
-        <RouterLink v-if="auth.token" to="/envelopes" class="btn btn-ghost head-cta">
-          <AppIcon name="ph:envelope-simple" />
-          <span class="hidden sm:inline">{{ t('nav.envelopes') }}</span>
+        <RouterLink to="/" class="nav-link">{{ t('nav.home') }}</RouterLink>
+        <RouterLink to="/start" class="nav-link">{{ t('nav.howTo') }}</RouterLink>
+        <RouterLink v-if="auth.token" to="/envelopes" class="nav-link">
+          {{ t('nav.envelopes') }}
         </RouterLink>
         <LangSwitch />
 
@@ -24,9 +21,9 @@
             <span class="text-[0.68rem] text-white/45">{{ t('nav.account') }}</span>
           </div>
         </RouterLink>
-        <RouterLink v-else :to="loginTo" class="btn btn-primary head-login" :aria-label="t('nav.login')">
-          <AppIcon name="ph:sign-in" />
-          <span class="hidden sm:inline">{{ t('nav.login') }}</span>
+        <RouterLink v-else :to="registerTo" class="btn btn-primary head-login">
+          <AppIcon name="ph:user-plus" />
+          <span class="hidden sm:inline">{{ t('nav.register') }}</span>
         </RouterLink>
       </nav>
     </div>
@@ -48,7 +45,7 @@ const route = useRoute()
 const onBuilder = computed(() => route.name === 'builder')
 const name = computed(() => auth.user?.name || auth.user?.email || '')
 const initial = computed(() => (name.value || '?').trim().charAt(0).toUpperCase())
-const loginTo = computed(() => ({ path: '/login', query: { next: '/envelopes' } }))
+const registerTo = computed(() => ({ path: '/register', query: { next: '/envelopes' } }))
 </script>
 
 <style scoped>
@@ -96,16 +93,28 @@ const loginTo = computed(() => ({ path: '/login', query: { next: '/envelopes' } 
   align-items: center;
   gap: 0.5rem;
 }
-.head-cta {
-  padding: 0.55rem 0.85rem !important;
-  font-size: 0.82rem;
-  border-radius: 0.9rem;
+.nav-link {
+  display: none;
+  padding: 0.35rem 0.2rem;
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.62);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-link:hover {
+  color: #fff;
+}
+.nav-link.router-link-active {
+  color: #f5c451;
+}
+@media (min-width: 900px) {
+  .nav-link {
+    display: inline-block;
+    margin-right: 0.5rem;
+  }
 }
 /* Tor ekranda sarlavhadagi qo'shimcha tugmalar sig'maydi — yashiriladi */
 @media (max-width: 639px) {
-  .head-cta {
-    display: none;
-  }
   .site-head-in {
     padding: 0 0.8rem;
   }

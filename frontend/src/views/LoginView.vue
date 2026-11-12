@@ -8,94 +8,77 @@
 
   <SiteHeader />
 
-  <main class="login-wrap">
-    <div class="login-card glass">
-      <!-- Chap panel: brend -->
-      <aside class="login-side">
-        <span class="side-glow"></span>
-        <div class="side-env" aria-hidden="true">
-          <span class="side-flap"></span>
-          <span class="side-seal">✦</span>
-        </div>
-        <p class="side-kicker">✦ Taklifnoma</p>
-        <h2 class="side-title">Har bir lahzani<br />chiroyli ulashing</h2>
-        <ul class="side-list">
-          <li><AppIcon name="ph:lightning" /> Tez ochiladigan taklifnomalar</li>
-          <li><AppIcon name="ph:text-aa" /> 5 xil shrift, har matnga alohida</li>
-          <li><AppIcon name="ph:device-mobile" /> Barcha qurilmalarda saqlanadi</li>
-        </ul>
-      </aside>
+  <main class="auth-wrap">
+    <div class="glass card auth-card">
+      <p class="auth-kicker">
+        {{ mode === 'register' ? t('loginExtra.registerKicker') : t('loginExtra.loginKicker') }}
+      </p>
+      <h1 class="auth-title">{{ t('login.title') }}</h1>
+      <p class="auth-sub">{{ t('login.sub') }}</p>
 
-      <!-- O'ng panel: forma -->
-      <section class="login-form">
-        <p class="form-kicker">{{ t('login.kicker') }}</p>
-        <h1 class="form-title">{{ t('login.title') }}</h1>
-        <p class="form-sub">{{ t('login.sub') }}</p>
+      <button
+        class="btn google-btn"
+        type="button"
+        :class="{ 'google-off': !authConfig.google }"
+        @click="google"
+      >
+        <AppIcon name="ph:google-logo" />
+        {{ t('login.google') }}
+      </button>
+      <p v-if="!authConfig.google" class="google-note">{{ t('login.googleOff') }}</p>
 
-        <button
-          class="btn google-btn"
-          type="button"
-          :class="{ 'google-off': !authConfig.google }"
-          @click="google"
-        >
-          <AppIcon name="ph:google-logo" />
-          {{ t('login.google') }}
+      <div class="or"><span>{{ t('login.or') }}</span></div>
+
+      <form class="email-form" @submit.prevent="submit">
+        <label v-if="mode === 'register'" class="flabel">
+          <span>{{ t('login.name') }}</span>
+          <input v-model="form.name" class="field" type="text" autocomplete="name" placeholder="Aziz Karimov" />
+        </label>
+        <label class="flabel">
+          <span>{{ t('login.email') }}</span>
+          <input
+            v-model="form.email"
+            class="field"
+            type="email"
+            inputmode="email"
+            autocomplete="email"
+            placeholder="siz@email.com"
+            required
+          />
+        </label>
+        <label class="flabel">
+          <span>{{ t('login.password') }}</span>
+          <input
+            v-model="form.password"
+            class="field"
+            type="password"
+            :autocomplete="mode === 'login' ? 'current-password' : 'new-password'"
+            placeholder="••••••••"
+            required
+          />
+        </label>
+
+        <p v-if="errorMsg" class="form-err">{{ errorMsg }}</p>
+
+        <button class="btn btn-primary submit" type="submit" :disabled="busy">
+          {{ busy ? t('login.working') : mode === 'login' ? t('login.signIn') : t('login.signUp') }}
         </button>
-        <p v-if="!authConfig.google" class="google-note">{{ t('login.googleOff') }}</p>
+      </form>
 
-        <div class="or"><span>{{ t('login.or') }}</span></div>
+      <p class="switch">
+        {{ mode === 'login' ? t('login.noAccount') : t('login.haveAccount') }}
+        <button type="button" @click="toggleMode">
+          {{ mode === 'login' ? t('login.signUp') : t('login.signIn') }}
+        </button>
+      </p>
 
-        <form class="email-form" @submit.prevent="submit">
-          <label v-if="mode === 'register'" class="flabel">
-            <span>{{ t('login.name') }}</span>
-            <input v-model="form.name" class="field" type="text" autocomplete="name" placeholder="Aziz Karimov" />
-          </label>
-          <label class="flabel">
-            <span>{{ t('login.email') }}</span>
-            <input
-              v-model="form.email"
-              class="field"
-              type="email"
-              inputmode="email"
-              autocomplete="email"
-              placeholder="siz@email.com"
-              required
-            />
-          </label>
-          <label class="flabel">
-            <span>{{ t('login.password') }}</span>
-            <input
-              v-model="form.password"
-              class="field"
-              type="password"
-              :autocomplete="mode === 'login' ? 'current-password' : 'new-password'"
-              placeholder="••••••••"
-              required
-            />
-          </label>
-
-          <p v-if="errorMsg" class="form-err">{{ errorMsg }}</p>
-
-          <button class="btn btn-primary submit" type="submit" :disabled="busy">
-            {{ busy ? t('login.working') : mode === 'login' ? t('login.signIn') : t('login.signUp') }}
-          </button>
-        </form>
-
-        <p class="switch">
-          {{ mode === 'login' ? t('login.noAccount') : t('login.haveAccount') }}
-          <button type="button" @click="toggleMode">
-            {{ mode === 'login' ? t('login.signUp') : t('login.signIn') }}
-          </button>
-        </p>
-
-        <RouterLink to="/" class="back-link">← {{ t('login.back') }}</RouterLink>
-      </section>
+      <RouterLink to="/" class="back-link">← {{ t('login.back') }}</RouterLink>
     </div>
   </main>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import {
@@ -114,7 +97,7 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
-const mode = ref('login')
+const mode = ref(route.name === 'register' ? 'register' : 'login')
 const busy = ref(false)
 const errorMsg = ref('')
 const form = reactive({ name: '', email: '', password: '' })
@@ -132,14 +115,28 @@ onMounted(async () => {
   if (auth.token) router.replace(target)
 })
 
+watch(
+  () => route.name,
+  (name) => {
+    mode.value = name === 'register' ? 'register' : 'login'
+    errorMsg.value = ''
+  },
+)
+
 function toggleMode() {
-  mode.value = mode.value === 'login' ? 'register' : 'login'
-  errorMsg.value = ''
+  router.replace({ path: mode.value === 'login' ? '/register' : '/login', query: route.query })
 }
 
 function google() {
   if (!authConfig.google) return
   signIn(target)
+}
+
+function errorText(code) {
+  if (code === 'too_many_attempts') return t('loginExtra.tooMany')
+  const key = 'login.err.' + code
+  const msg = t(key)
+  return msg === key ? t('login.err.default') : msg
 }
 
 async function submit() {
@@ -154,10 +151,7 @@ async function submit() {
     }
     router.replace(target)
   } catch (e) {
-    const code = e && e.code ? e.code : 'default'
-    const key = 'login.err.' + code
-    const msg = t(key)
-    errorMsg.value = msg === key ? t('login.err.default') : msg
+    errorMsg.value = errorText(e && e.code ? e.code : 'default')
   } finally {
     busy.value = false
   }
@@ -165,206 +159,72 @@ async function submit() {
 </script>
 
 <style scoped>
-.login-wrap {
+.auth-wrap {
   display: grid;
   place-items: center;
   padding: 2.5rem 1rem 3.5rem;
 }
-.login-card {
-  display: grid;
-  width: min(64rem, 100%);
-  overflow: hidden;
-  border-radius: 1.6rem;
-  padding: 0 !important;
-  animation: cardIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+.auth-card {
+  width: min(26rem, 100%);
+  padding: 1.9rem 1.5rem 1.7rem !important;
+  animation: cardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 @keyframes cardIn {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(14px);
   }
 }
-@media (min-width: 900px) {
-  .login-card {
-    grid-template-columns: 1fr 1.05fr;
-  }
-}
-
-/* chap panel */
-.login-side {
-  position: relative;
-  display: none;
-  overflow: hidden;
-  padding: 2.6rem 2.2rem;
-  background:
-    radial-gradient(90% 80% at 20% 0%, rgba(167, 139, 250, 0.3), transparent 65%),
-    radial-gradient(80% 90% at 100% 100%, rgba(245, 196, 81, 0.18), transparent 60%),
-    #120f22;
-  border-right: 1px solid rgba(255, 255, 255, 0.07);
-}
-@media (min-width: 900px) {
-  .login-side {
-    display: block;
-  }
-}
-.side-glow {
-  position: absolute;
-  width: 18rem;
-  height: 18rem;
-  right: -6rem;
-  bottom: -7rem;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(232, 121, 249, 0.35), transparent 65%);
-  filter: blur(18px);
-  animation: breathe 8s ease-in-out infinite;
-}
-@keyframes breathe {
-  50% {
-    transform: scale(1.15);
-    opacity: 0.7;
-  }
-}
-.side-env {
-  position: relative;
-  width: 84px;
-  height: 58px;
-  margin-bottom: 1.6rem;
-  border-radius: 0.6rem;
-  background: linear-gradient(160deg, #f5c451, #e8b93c);
-  box-shadow: 0 16px 30px -16px rgba(245, 196, 81, 0.85);
-  animation: floaty 6s ease-in-out infinite;
-}
-@keyframes floaty {
-  50% {
-    transform: translateY(-8px);
-  }
-}
-.side-flap {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(160deg, #ffe9a8, #f5c451);
-  clip-path: polygon(0 0, 100% 0, 50% 62%);
-  transform-origin: top;
-  animation: flap 5s ease-in-out infinite;
-}
-@keyframes flap {
-  0%,
-  60%,
-  100% {
-    transform: rotateX(0deg);
-  }
-  74% {
-    transform: rotateX(-150deg);
-  }
-}
-.side-seal {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  font-size: 0.72rem;
-  color: #4a3712;
-  background: #fff7df;
-  z-index: 2;
-}
-.side-kicker {
-  font-size: 0.68rem;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: rgba(255, 233, 168, 0.7);
-}
-.side-title {
-  margin-top: 0.6rem;
-  font-family: var(--font-display);
-  font-size: 1.9rem;
-  line-height: 1.2;
-  font-weight: 600;
-}
-.side-list {
-  margin-top: 1.6rem;
-  display: grid;
-  gap: 0.7rem;
-  padding: 0;
-  list-style: none;
-  font-size: 0.84rem;
-  color: rgba(255, 255, 255, 0.62);
-}
-.side-list li {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-}
-.side-list :deep(svg) {
-  color: #f5c451;
-}
-
-/* forma */
-.login-form {
-  padding: 2rem 1.5rem 1.8rem;
-}
-@media (min-width: 640px) {
-  .login-form {
-    padding: 2.6rem 2.4rem 2.2rem;
-  }
-}
-.form-kicker {
+.auth-kicker {
   font-size: 0.66rem;
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: rgba(196, 181, 253, 0.8);
 }
-.form-title {
-  margin-top: 0.35rem;
+.auth-title {
+  margin-top: 0.3rem;
   font-family: var(--font-display);
-  font-size: 1.75rem;
+  font-size: 1.6rem;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.25;
 }
-.form-sub {
-  margin-top: 0.5rem;
-  font-size: 0.83rem;
-  line-height: 1.65;
+.auth-sub {
+  margin-top: 0.45rem;
+  font-size: 0.82rem;
+  line-height: 1.6;
   color: rgba(255, 255, 255, 0.5);
 }
 .google-btn {
   width: 100%;
-  margin-top: 1.4rem;
+  margin-top: 1.2rem;
   border-radius: 1rem;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: #fff;
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 .google-btn:hover {
   background: rgba(255, 255, 255, 0.12);
-  transform: translateY(-1px);
 }
 .google-off {
   opacity: 0.55;
   cursor: not-allowed;
 }
 .google-off:hover {
-  transform: none;
   background: rgba(255, 255, 255, 0.07);
 }
 .google-note {
-  margin-top: 0.5rem;
+  margin-top: 0.45rem;
   font-size: 0.72rem;
-  line-height: 1.55;
+  line-height: 1.5;
   color: rgba(245, 196, 81, 0.75);
 }
 .or {
   display: flex;
   align-items: center;
   gap: 0.7rem;
-  margin: 1.2rem 0;
-  font-size: 0.7rem;
+  margin: 1.1rem 0;
+  font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.16em;
   color: rgba(255, 255, 255, 0.3);
@@ -378,7 +238,7 @@ async function submit() {
 }
 .email-form {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.7rem;
 }
 .flabel {
   display: grid;
@@ -397,7 +257,7 @@ async function submit() {
 }
 .submit {
   width: 100%;
-  margin-top: 0.35rem;
+  margin-top: 0.3rem;
   border-radius: 1rem;
 }
 .switch {
@@ -418,21 +278,11 @@ async function submit() {
 }
 .back-link {
   display: inline-block;
-  margin-top: 1.3rem;
-  font-size: 0.76rem;
+  margin-top: 1.1rem;
+  font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.35);
-  transition: color 0.2s;
 }
 .back-link:hover {
   color: #fff;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .side-env,
-  .side-flap,
-  .side-glow,
-  .login-card {
-    animation: none;
-  }
 }
 </style>
