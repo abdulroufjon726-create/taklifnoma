@@ -15,23 +15,6 @@ from .serializers import InvitationCreateSerializer, InvitationSerializer
 logger = logging.getLogger(__name__)
 
 
-def _schema_state():
-    """Jadval va ustunlar joyidami — 500 sababini ko'rsatish uchun."""
-    try:
-        tables = set(connection.introspection.table_names())
-    except Exception as exc:
-        return {"error": str(exc).replace("\n", " ")[:200]}
-    state = {"table": "invitations_invitation" in tables}
-    if state["table"]:
-        try:
-            with connection.cursor() as cursor:
-                desc = connection.introspection.get_table_description(cursor, "invitations_invitation")
-            state["columns"] = sorted(col.name for col in desc)
-        except Exception as exc:
-            state["columns_error"] = str(exc).replace("\n", " ")[:200]
-    return state
-
-
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def health(request):
@@ -47,7 +30,7 @@ def health(request):
             {"status": "error", "database": "down", "engine": engine},
             status=status.HTTP_503_SERVICE_UNAVAILABLE,
         )
-    body = {"status": "ok", "database": "ok", "engine": engine, "schema": _schema_state()}
+    body = {"status": "ok", "database": "ok", "engine": engine}
     fallback = getattr(settings, "DB_FALLBACK_REASON", "")
     if fallback:
         body["fallback"] = True

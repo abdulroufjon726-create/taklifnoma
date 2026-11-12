@@ -1,13 +1,21 @@
 """
-Postgres tiklansa — SQLite fallback'dan avtomatik qaytish.
+Postgres tiklansa — SQLite fallback'dan avtomatik qaytish (fon taymeri).
 
-Ishga tushishda Postgres yetib bo'lmasa (Tailscale tunnel yopiq, baza o'chgan),
-settings.py SQLite'ga o'tadi. Baza keyin qaytsa, servisni qayta ishga tushirmasdan
-ham Postgres'ga qaytish kerak — buni shu middleware 30 soniyada bir marta
-tekshiradi. Migratsiya muvaffaqiyatsiz bo'lsa, SQLite'da qolamiz.
+Ishga tushishda Postgres yetib bo'lmasa, settings.py SQLite'ga o'tadi. Baza keyin
+qaytsa, servisni qayta ishga tushirmasdan ham Postgres'ga qaytish kerak. Buni fon
+taymeri (daemon thread) har `DJANGO_DB_RECOVERY_INTERVAL` soniyada tekshiradi.
+
+Xavfsizlik: almashtirish paytida so'rovlar `request_scope()` bilan qulflanadi.
+Taymer barcha faol so'rovlar tugashini kutadi, keyin ulanishni almashtiradi —
+shundan keyin hech bir thread SQLite'ga yozib qolmaydi. Har bir thread o'zining
+keshlangan ulanishini ham tekshiradi (`ensure_current_connection`), chunki
+Django ulanishlari thread-local.
 """
 
+import contextlib
 import logging
+import os
+import threading
 import time
 
 from django.conf import settings
@@ -15,12 +23,49 @@ from django.db import connections
 
 logger = logging.getLogger(__name__)
 
-RETRY_EVERY_SECONDS = 30.0
-_last_try = 0.0
+
+def _interval():
+    try:
+        return max(5.0, float(os.environ.get("DJANGO_DB_RECOVERY_INTERVAL", "30")))
+    except ValueError:
+        return 30.0
 
 
-def _reset_default_connection() -> None:
-    """Joriy thread'dagi ulanishlarni yopib, konfiguratsiya keshini tozalaydi."""
+_state = threading.Condition()
+_active_requests = 0
+_switching = False
+_started = False
+_start_lock = threading.Lock()
+
+
+@contextlib.contextmanager
+def request_scope():
+    """Baza almashtirilayotganda kutadi va almashish tugamaguncha ushlab turadi."""
+    global _active_requests
+    with _state:
+        while _switching:
+            _state.wait()
+        _active_requests += 1
+    try:
+        yield
+    finally:
+        with _state:
+            _active_requests -= 1
+            if _active_requests == 0:
+                _state.notify_all()
+
+
+def _identity(cfg):
+    return (
+        cfg.get("ENGINE"),
+        str(cfg.get("NAME") or ""),
+        cfg.get("HOST") or "",
+        str(cfg.get("PORT") or ""),
+    )
+
+
+def _reset_thread_connection():
+    """Joriy thread'ning keshlangan ulanishini va konfiguratsiya keshini tozalaydi."""
     try:
         connections.close_all()
     except Exception:
@@ -31,6 +76,20 @@ def _reset_default_connection() -> None:
         pass
     if "settings" in connections.__dict__:
         del connections.__dict__["settings"]
+
+
+def ensure_current_connection():
+    """Thread'da eski (SQLite) ulanish qolgan bo'lsa — tashlab yuboradi."""
+    try:
+        conn = connections["default"]
+    except Exception:
+        return
+    try:
+        current = _identity(conn.settings_dict)
+    except Exception:
+        current = None
+    if current != _identity(settings.DATABASES["default"]):
+        _reset_thread_connection()
 
 
 def postgres_ready(timeout: int = 5) -> bool:
@@ -62,6 +121,7 @@ def postgres_ready(timeout: int = 5) -> bool:
 
 def switch_to_postgres() -> bool:
     """Postgres'ga o'tadi; migratsiya yiqilsa SQLite'da qoladi."""
+    global _switching
     from django.core.management import call_command
 
     cfg = getattr(settings, "POSTGRES_DB_CONFIG", None)
@@ -69,47 +129,73 @@ def switch_to_postgres() -> bool:
     if not cfg or not sqlite_cfg:
         return False
 
-    _reset_default_connection()
-    settings.DATABASES["default"] = cfg
+    with _state:
+        _switching = True
+        while _active_requests:
+            _state.wait()
     try:
-        call_command("migrate", interactive=False, verbosity=0)
-    except Exception:
-        logger.exception("Postgres'da migratsiya bajarilmadi - SQLite'da qolamiz")
-        _reset_default_connection()
-        settings.DATABASES["default"] = sqlite_cfg
-        return False
+        _reset_thread_connection()
+        settings.DATABASES["default"] = cfg
+        try:
+            call_command("migrate", interactive=False, verbosity=0)
+        except Exception:
+            logger.exception("Postgres'da migratsiya bajarilmadi - SQLite'da qolamiz")
+            _reset_thread_connection()
+            settings.DATABASES["default"] = sqlite_cfg
+            return False
 
-    settings.DB_FALLBACK_REASON = ""
-    logger.warning("Postgres qaytdi - SQLite fallback'dan Postgres'ga o'tildi")
-    return True
+        settings.DB_FALLBACK_REASON = ""
+        logger.warning("Postgres qaytdi - SQLite fallback'dan Postgres'ga o'tildi")
+        return True
+    finally:
+        with _state:
+            _switching = False
+            _state.notify_all()
 
 
 def maybe_recover(force: bool = False) -> bool:
-    """Fallback holatida bo'lsak, Postgres'ni qayta tekshiradi (throttle bilan)."""
-    global _last_try
-
+    """Fallback holatida bo'lsak, Postgres'ni qayta tekshiradi."""
     if not getattr(settings, "DB_FALLBACK_REASON", ""):
         return False
-
-    now = time.monotonic()
-    if not force and now - _last_try < RETRY_EVERY_SECONDS:
-        return False
-    _last_try = now
-
     if not postgres_ready():
         return False
     return switch_to_postgres()
 
 
-class PostgresRecoveryMiddleware:
-    """Har so'rovda (30 soniyada bir marta) bazani qayta ulashga urinadi."""
+def _watch_loop(interval):
+    while True:
+        try:
+            maybe_recover()
+        except Exception:
+            logger.exception("Bazani qayta ulash tekshiruvi yiqildi")
+        time.sleep(interval)
+
+
+def start_watchdog() -> bool:
+    """Fon taymerini bir marta ishga tushiradi (har worker jarayonida bitta)."""
+    global _started
+    with _start_lock:
+        if _started:
+            return False
+        _started = True
+
+    if not getattr(settings, "POSTGRES_DB_CONFIG", None):
+        return False
+
+    interval = _interval()
+    thread = threading.Thread(target=_watch_loop, args=(interval,), name="db-recovery", daemon=True)
+    thread.start()
+    logger.info("Postgres recovery watchdog started (har %ss)", interval)
+    return True
+
+
+class DatabaseSyncMiddleware:
+    """So'rovni baza almashishidan himoyalaydi va thread ulanishini yangilaydi."""
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        try:
-            maybe_recover()
-        except Exception:
-            logger.exception("Bazani qayta ulash tekshiruvi yiqildi")
-        return self.get_response(request)
+        with request_scope():
+            ensure_current_connection()
+            return self.get_response(request)

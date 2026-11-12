@@ -75,6 +75,10 @@ try:
 
     django.setup()
     _ensure_schema()
+
+    from config import dbswitch
+
+    dbswitch.start_watchdog()
 except Exception:  # pragma: no cover - hech qachon serverni yiqitmaymiz
     logger.exception("WSGI bootstrap failed")
 
