@@ -105,11 +105,12 @@ if DATABASE_URL.startswith(("postgres://", "postgresql://")):
         _db_options["sslmode"] = _query["sslmode"][0]
     elif _db.hostname not in ("127.0.0.1", "localhost", "::1", None):
         _db_options["sslmode"] = "require"
-    # Osilib qolmasin: baza yopiq bo'lsa health-check 5 soniyada javob beradi
+    # Osilib qolmasin: baza yopiq bo'lsa health-check ~10 soniyada javob beradi
+    # (Neon/Render baza uyqudan uyg'onishi 5 soniyadan oshishi mumkin)
     try:
-        _db_options["connect_timeout"] = max(1, int(os.environ.get("DJANGO_DB_CONNECT_TIMEOUT", "5")))
+        _db_options["connect_timeout"] = max(1, int(os.environ.get("DJANGO_DB_CONNECT_TIMEOUT", "10")))
     except ValueError:
-        _db_options["connect_timeout"] = 5
+        _db_options["connect_timeout"] = 10
 
     _pg = {
         "ENGINE": "django.db.backends.postgresql",
