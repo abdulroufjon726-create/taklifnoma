@@ -16,9 +16,7 @@ class HealthTests(TestCase):
         self.assertEqual(body["expected"], "sqlite")
         self.assertNotIn("fallback", body)
 
-    @override_settings(
-        POSTGRES_DB_CONFIG={"ENGINE": "django.db.backends.postgresql", "NAME": "x"}
-    )
+    @override_settings(DATABASE_URL="postgresql://u:p@127.0.0.1:59999/x")
     def test_health_fails_when_postgres_configured_but_unused(self):
         res = self.client.get("/api/health/")
         self.assertEqual(res.status_code, 503)

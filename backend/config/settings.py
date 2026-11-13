@@ -91,19 +91,6 @@ WSGI_APPLICATION = "config.wsgi.application"
 # bo'lmasa (lokal ishlab chiqishda) SQLite.
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 
-# Health-check "qaysi baza kutilgan" ni bilishi uchun (None = SQLite).
-POSTGRES_DB_CONFIG = None
-
-
-def _sqlite_database():
-    return {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
-
-
 if DATABASE_URL.startswith(("postgres://", "postgresql://")):
     from urllib.parse import parse_qs, unquote, urlparse
 
@@ -134,15 +121,17 @@ if DATABASE_URL.startswith(("postgres://", "postgresql://")):
         "CONN_MAX_AGE": 60,
         "OPTIONS": _db_options,
     }
-    # Health faqat shu belgi orqali "Postgres kutilgan" ekanini biladi.
-    POSTGRES_DB_CONFIG = _pg
-
     # MUHIM: boshqa bazaga (SQLite'ga) jimgina o'tish yo'q.
     # Postgres bo'lmasa ilova ishlamaydi va /api/health/ 503 qaytaradi —
     # shunda deploy'da darhol ko'rinadi va taklifnomalar yo'qolmaydi.
     DATABASES = {"default": _pg}
 else:
-    DATABASES = _sqlite_database()
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 # Render kabi proxy ortida HTTPS'ni to'g'ri aniqlash uchun
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

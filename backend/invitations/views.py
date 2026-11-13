@@ -28,7 +28,7 @@ def health(request):
     darhol ko'rinadi.
     """
     engine = str(settings.DATABASES["default"].get("ENGINE", "")).rsplit(".", 1)[-1]
-    expects_postgres = bool(getattr(settings, "POSTGRES_DB_CONFIG", None))
+    expects_postgres = settings.DATABASE_URL.startswith(("postgres://", "postgresql://"))
     body = {
         "status": "ok",
         "database": "ok",
