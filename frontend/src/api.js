@@ -259,13 +259,21 @@ export async function updateInvitation(code, editKey, payload) {
   return data
 }
 
-/** Backendni "uyg'otish" uchun yengil fon so'rovi (xato bo'lsa jim o'tadi). */
+/** Backendni "uyg'otish" uchun yengil fon so'rovi (xato bo'lsa jim o'tadi).
+    Render bepul tarifi uxlab qolishi mumkin — lekin har sahifada qayta
+    urinmaymiz: 5 daqiqada bir marta yetarli. */
+const WARM_KEY = 'taklifnoma:warm'
+const WARM_TTL = 5 * 60 * 1000
+
 export function warmUp() {
   try {
-    request('/api/health/', { method: 'GET' }).catch(() => {})
+    const at = Number(localStorage.getItem(WARM_KEY) || 0)
+    if (Date.now() - at < WARM_TTL) return
+    localStorage.setItem(WARM_KEY, String(Date.now()))
   } catch {
-    /* ignore */
+    /* localStorage yo'q — baribir davom etamiz */
   }
+  request('/api/health/', { method: 'GET' }).catch(() => {})
 }
 
 export function shareUrl(code) {
@@ -296,19 +304,28 @@ export async function copyText(text) {
 
 /* ---- Hisob: egasining taklifnomalari ---------------------------------- */
 
-/** Kirgan foydalanuvchining barcha taklifnomalari. */
+/** Kirgan foydalanuvchining barcha taklifnomalari.
+    Render uxlab qolgan bo'lsa birinchi so'rov uzilishi mumkin — GET
+    xavfsiz, shuning uchun bitta qayta urinamiz (ikkinchisi tez keladi). */
 export async function fetchMyInvitations() {
-  let res
-  try {
-    res = await request('/api/invitations/mine/')
-  } catch (e) {
-    if (e.name === 'AbortError') {
-      const err = new Error("Server javob bermadi. Qayta urinib ko'ring.")
-      err.status = 0
-      err.code = 'timeout'
-      throw err
+  let res = null
+  for (let attempt = 0; attempt < 2 && !res; attempt += 1) {
+    try {
+      res = await request('/api/invitations/mine/')
+    } catch (e) {
+      const soft = e.name === 'AbortError' || e.name === 'TypeError'
+      if (!soft || attempt === 1) {
+        const err =
+          e.name === 'AbortError'
+            ? Object.assign(new Error("Server javob bermadi. Qayta urinib ko'ring."), {
+                status: 0,
+                code: 'timeout',
+              })
+            : networkError(e)
+        throw err
+      }
+      await new Promise((r) => setTimeout(r, 800))
     }
-    throw networkError(e)
   }
   const data = await parse(res)
   return data.results || []

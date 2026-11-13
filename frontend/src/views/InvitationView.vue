@@ -144,10 +144,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, defineAsyncComponent, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import InvitationStage from '../components/InvitationStage.vue'
-import RouteMap from '../components/RouteMap.vue'
+/* Leaflet (166 KB) faqat "yo'l ko'rsatish" bosilganda yuklanadi — mehmon
+   taklifnomani tez ochishi uchun. */
+const RouteMap = defineAsyncComponent(() => import('../components/RouteMap.vue'))
 import AppIcon from '../components/AppIcon.vue'
 import LangSwitch from '../components/LangSwitch.vue'
 import { fetchInvitation, getCachedInvitation, shareUrl, copyText } from '../api.js'

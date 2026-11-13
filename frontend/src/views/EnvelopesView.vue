@@ -27,7 +27,7 @@
       <div v-for="n in 3" :key="n" class="skeleton"></div>
     </div>
 
-    <div v-else-if="error" class="glass card state-card">
+    <div v-else-if="error && !items.length" class="glass card state-card">
       <AppIcon name="ph:warning-circle" size="1.8rem" class="text-amber-300" />
       <p>{{ t('envelopes.err') }}</p>
       <button class="btn btn-ghost" @click="load">{{ t('envelopes.retry') }}</button>
@@ -223,7 +223,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { claimInvitation, copyText, deleteInvitation, fetchMyInvitations, shareUrl } from '../api.js'
-import { auth, loadMe } from '../auth.js'
+import { auth, currentUserId, loadMe } from '../auth.js'
 import { listMine, removeMine } from '../data/mine.js'
 import { THEMES, fontStack, prettyCode } from '../data/catalog.js'
 import { formatDate, useI18n } from '../i18n/index.js'
@@ -233,8 +233,37 @@ import SiteHeader from '../components/SiteHeader.vue'
 const { t, tf, locale } = useI18n()
 const router = useRouter()
 
-const items = ref([])
-const loading = ref(true)
+/* Oxirgi ro'yxat shu qurilmada saqlanadi — sahifa darhol ochiladi,
+   server javobi kelgach yangilanadi (Render uxlab qolgan bo'lsa ham). */
+const LIST_KEY = 'taklifnoma:list'
+const LIST_TTL = 6 * 60 * 60 * 1000
+
+function listCacheKey() {
+  return `${LIST_KEY}:${auth.user?.id ?? currentUserId() ?? 'guest'}`
+}
+
+function readListCache() {
+  try {
+    const raw = localStorage.getItem(listCacheKey())
+    const saved = raw ? JSON.parse(raw) : null
+    if (!saved || Date.now() - saved.at > LIST_TTL || !Array.isArray(saved.items)) return []
+    return saved.items
+  } catch {
+    return []
+  }
+}
+
+function writeListCache(list) {
+  try {
+    localStorage.setItem(listCacheKey(), JSON.stringify({ at: Date.now(), items: list.slice(0, 60) }))
+  } catch {
+    /* xotira to'lgan bo'lsa jim o'tamiz */
+  }
+}
+
+const cachedList = readListCache()
+const items = ref(cachedList)
+const loading = ref(!cachedList.length)
 const error = ref('')
 const selected = ref(null)
 const confirming = ref(false)
@@ -243,6 +272,9 @@ const copied = ref('')
 const deleteError = ref('')
 const leaving = ref(new Set())
 let copiedTimer = null
+
+/* Ro'yxat har o'zgarganda (yuklash, o'chirish) kesh yangilanadi */
+watch(items, (list) => writeListCache(list), { deep: true })
 
 function firstText(inv) {
   const list = Array.isArray(inv.texts) ? inv.texts : []
@@ -289,7 +321,7 @@ function legacyToInvitation(entry) {
 }
 
 async function load() {
-  loading.value = true
+  loading.value = !items.value.length
   error.value = ''
   try {
     const [list] = await Promise.all([fetchMyInvitations(), auth.user ? null : loadMe()])
@@ -327,6 +359,7 @@ async function load() {
       .filter((e) => !after.has(e.code) && !foreign.has(e.code))
       .map(legacyToInvitation)
     items.value = [...merged, ...extras]
+    writeListCache(items.value)
   } catch (e) {
     if (e && (e.status === 401 || e.status === 403)) {
       const expired = e.status === 401 ? '1' : ''
