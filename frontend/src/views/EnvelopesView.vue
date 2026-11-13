@@ -95,18 +95,16 @@
   </main>
 
   <Teleport to="body">
-    <Transition name="sheet">
-      <div v-if="selected" class="sheet-backdrop" @click.self="closeSheet">
+    <div v-if="selected" class="sheet-backdrop" @click.self="closeSheet">
         <div
           class="sheet"
           role="dialog"
           aria-modal="true"
-          :style="previewStyle(selected)"
+          :style="cardStyle(selected, 0)"
         >
           <span class="sheet-decor" aria-hidden="true">
             <span class="sheet-aura aura-a"></span>
             <span class="sheet-aura aura-b"></span>
-            <span class="sheet-specular"></span>
           </span>
 
           <button class="sheet-x" :aria-label="t('account.close')" @click="closeSheet">✕</button>
@@ -125,7 +123,6 @@
               <p v-if="selected.place" class="pv-place">
                 <AppIcon name="ph:map-pin" size="0.9em" /> {{ selected.place }}
               </p>
-              <p class="pv-code">{{ prettyCode(selected.code) }}</p>
             </div>
 
             <!-- Boshqaruv -->
@@ -177,10 +174,6 @@
                 </div>
               </dl>
 
-              <p class="copied-note" :class="{ show: copied === selected.code }">
-                {{ t('envelopes.copied') }}
-              </p>
-
               <template v-if="!confirming">
                 <div class="pane-actions">
                   <button class="lq-btn lq-primary" type="button" @click="edit(selected)">
@@ -208,6 +201,7 @@
               <div v-else class="confirm">
                 <p class="confirm-title">{{ t('account.confirm') }}</p>
                 <p class="confirm-sub">{{ t('account.confirmSub') }}</p>
+                <p v-if="deleteError" class="confirm-error">{{ deleteError }}</p>
                 <div class="pane-actions">
                   <button class="lq-btn lq-danger" type="button" :disabled="deleting" @click="remove(selected)">
                     {{ deleting ? t('account.deleting') : t('account.delete') }}
@@ -220,8 +214,7 @@
             </div>
           </div>
         </div>
-      </div>
-    </Transition>
+    </div>
   </Teleport>
 </template>
 
@@ -247,12 +240,9 @@ const selected = ref(null)
 const confirming = ref(false)
 const deleting = ref(false)
 const copied = ref('')
+const deleteError = ref('')
 const leaving = ref(new Set())
 let copiedTimer = null
-
-function themeOf(id) {
-  return THEMES.find((x) => x.id === id) || THEMES[0]
-}
 
 function firstText(inv) {
   const list = Array.isArray(inv.texts) ? inv.texts : []
@@ -260,7 +250,7 @@ function firstText(inv) {
 }
 
 function cardStyle(inv, i) {
-  const th = themeOf(inv.theme)
+  const th = THEMES.find((x) => x.id === inv.theme) || THEMES[0]
   return {
     '--d': `${Math.min(i, 8) * 70}ms`,
     '--bg': `linear-gradient(168deg, ${th.bg1}, ${th.bg2} 58%, ${th.bg3})`,
@@ -269,8 +259,6 @@ function cardStyle(inv, i) {
     '--tx': th.txt,
   }
 }
-
-const previewStyle = (inv) => cardStyle(inv, 0)
 
 /* Login'dan oldin yaratilgan (egasiz) taklifnoma yozuvini karta shakliga
    aylantiradi — u faqat shu qurilmada, edit_key bilan tahrirlanadi. */
@@ -354,6 +342,7 @@ async function load() {
 function openSheet(inv) {
   selected.value = inv
   confirming.value = false
+  deleteError.value = ''
   copied.value = ''
   document.body.style.overflow = 'hidden'
 }
@@ -361,6 +350,7 @@ function openSheet(inv) {
 function closeSheet() {
   selected.value = null
   confirming.value = false
+  deleteError.value = ''
   document.body.style.overflow = ''
 }
 
@@ -385,8 +375,8 @@ async function remove(inv) {
       leaving.value.delete(inv.code)
     }, 260)
     closeSheet()
-  } catch {
-    error.value = 'delete'
+  } catch (e) {
+    deleteError.value = e?.message || t('envelopes.err')
   } finally {
     deleting.value = false
   }
@@ -729,6 +719,7 @@ watch(locale, () => {
 .sheet-backdrop {
   position: fixed;
   inset: 0;
+  animation: fadeIn 0.2s ease both;
   z-index: 60;
   display: grid;
   place-items: center;
@@ -743,6 +734,7 @@ watch(locale, () => {
 .sheet {
   position: relative;
   width: min(56rem, 100%);
+  animation: sheetIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
   max-height: 92vh;
   overflow: auto;
   padding: clamp(1rem, 2.4vw, 1.6rem);
@@ -806,15 +798,6 @@ watch(locale, () => {
   bottom: -9rem;
   background: color-mix(in srgb, var(--ac) 50%, transparent);
   opacity: 0.42;
-}
-.sheet-specular {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(120deg, rgba(255, 255, 255, 0.28), transparent 32%, transparent 78%, rgba(255, 255, 255, 0.12));
-  mix-blend-mode: screen;
-  opacity: 0.32;
-  pointer-events: none;
 }
 .sheet-x {
   position: absolute;
@@ -925,17 +908,6 @@ watch(locale, () => {
   font-size: 0.72rem;
   opacity: 0.62;
 }
-.pv-code {
-  margin-top: 1.1rem;
-  align-self: center;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--ac) 45%, transparent);
-  background: rgba(0, 0, 0, 0.24);
-  padding: 0.2rem 0.7rem;
-  font-size: 0.68rem;
-  letter-spacing: 0.2em;
-  opacity: 0.85;
-}
 
 /* Boshqaruv paneli */
 .pane {
@@ -1011,19 +983,6 @@ watch(locale, () => {
   overflow: hidden;
   overflow-wrap: anywhere;
 }
-.copied-note {
-  margin: 0.7rem 0 0;
-  font-size: 0.72rem;
-  color: #86efac;
-  opacity: 0;
-  transform: translateY(-2px);
-  transition: all 0.2s;
-}
-.copied-note.show {
-  opacity: 1;
-  transform: none;
-}
-
 .pane-actions {
   margin-top: auto;
   padding-top: 1.2rem;
@@ -1101,29 +1060,26 @@ watch(locale, () => {
   line-height: 1.55;
   color: rgba(255, 255, 255, 0.66);
 }
+.confirm-error {
+  margin: 0.4rem 0 0;
+  font-size: 0.76rem;
+  color: #ffb4b4;
+}
 .confirm .pane-actions {
   padding-top: 0.8rem;
 }
 
-/* O'tishlar */
-.sheet-enter-active,
-.sheet-leave-active {
-  transition: opacity 0.24s ease;
+/* Ochilish animatsiyasi (chiqishda darhol yopiladi) */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
 }
-.sheet-enter-active .sheet,
-.sheet-leave-active .sheet {
-  transition:
-    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.24s ease;
-}
-.sheet-enter-from,
-.sheet-leave-to {
-  opacity: 0;
-}
-.sheet-enter-from .sheet,
-.sheet-leave-to .sheet {
-  transform: translateY(18px) scale(0.96);
-  opacity: 0;
+@keyframes sheetIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
 }
 
 .glyph {
@@ -1145,9 +1101,6 @@ watch(locale, () => {
   }
   .pv-names {
     font-size: 1.35rem;
-  }
-  .pv-code {
-    margin-top: 0.7rem;
   }
   .pane {
     padding: 0;

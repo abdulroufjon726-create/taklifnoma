@@ -37,7 +37,7 @@ const uz = {
     edit: 'Tahrirlash',
     open: 'Ochish',
     editNoKey:
-      "Bu qurilmada tahrirlash kaliti topilmadi — taklifnoma faqat yaratilgan qurilmada tahrirlanadi.",
+      "Bu taklifnoma sizga tegishli emas yoki tahrirlash kaliti bu qurilmada yo‘q — uni faqat egasi (yoki yaratilgan qurilma) tahrirlay oladi.",
     saveBtn: "O'zgarishlarni saqlash",
     updatedTitle: 'Taklifnoma yangilandi',
     updatedSub: "O'zgarishlar saqlandi — havola va kod o'sha-o'sha.",
@@ -360,7 +360,7 @@ const ru = {
     edit: 'Редактировать',
     open: 'Открыть',
     editNoKey:
-      'Ключ редактирования не найден на этом устройстве — приглашение можно менять только там, где оно создано.',
+      'Это приглашение не ваше или ключ редактирования отсутствует на устройстве — менять его может только владелец (или устройство, где оно создано).',
     saveBtn: 'Сохранить изменения',
     updatedTitle: 'Приглашение обновлено',
     updatedSub: 'Изменения сохранены — код и ссылка те же.',
@@ -684,7 +684,7 @@ const en = {
     edit: 'Edit',
     open: 'Open',
     editNoKey:
-      'The editing key is not on this device — an invitation can only be edited where it was created.',
+      'This invitation is not yours, or its editing key is not on this device — only the owner (or the device it was created on) can edit it.',
     saveBtn: 'Save changes',
     updatedTitle: 'Invitation updated',
     updatedSub: 'Changes saved — the code and link stay the same.',

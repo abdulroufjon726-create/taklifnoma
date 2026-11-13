@@ -690,7 +690,7 @@ function toEntry(inv) {
   const valid = !Number.isNaN(d.getTime())
   return {
     code: inv.code,
-    editKey: getMine(inv.code)?.editKey || '',
+    editKey: localEditEntry(inv.code)?.editKey || '',
     payload: {
       ...inv,
       date: valid ? `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` : '',
@@ -737,11 +737,23 @@ function applyMineEntry(entry) {
   contactDirty.value = true
 }
 
+/* Faqat egasi (server ro'yxati) yoki shu qurilmada saqlangan kalit.
+   Begona hisobning kaliti bilan ochilmaydi (umumiy brauzer). */
+function localEditEntry(code) {
+  const entry = getMine(code)
+  if (!entry || !entry.editKey) return null
+  const uid = auth.user?.id ?? null
+  if (entry.ownerId && entry.ownerId !== uid) return null
+  return entry
+}
+
 function loadForEdit(code) {
   const clean = String(code || '').replace(/[^a-z0-9]/gi, '').toUpperCase()
   if (!clean) return
-  const entry = mine.value.find((e) => e.code === clean) || getMine(clean)
+  const owned = mine.value.find((e) => e.code === clean)
+  const entry = owned || localEditEntry(clean)
   if (!entry) {
+    editing.value = null
     editError.value = t('builder.editNoKey')
     return
   }
@@ -834,6 +846,7 @@ async function submit() {
     saveMine({
       code: data.code,
       editKey: editing.value ? editing.value.editKey : data.edit_key,
+      ownerId: auth.user?.id ?? null,
       payload: { ...payload, date: form.date, time: form.time },
       updated_at: Date.now(),
     })
@@ -935,7 +948,8 @@ onMounted(async () => {
   } catch {
     lastCode.value = ''
   }
-  loadMe()
+  // localEditEntry() joriy hisobni bilishi kerak — avval profilni yuklaymiz
+  await loadMe()
   await loadMine()
   if (route.query.edit) loadForEdit(route.query.edit)
   window.addEventListener('keydown', onKey)

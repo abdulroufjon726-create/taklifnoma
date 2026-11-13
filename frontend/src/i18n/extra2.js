@@ -47,7 +47,6 @@ const uz = {
     err: 'Konvertlarni yuklab bo‘lmadi.',
     retry: 'Qayta urinish',
     views: '{n} ko‘rish',
-    copied: 'Havola nusxalandi ✓',
   },
   envelope: {
     back: 'Konvertlarga qaytish',
@@ -136,7 +135,6 @@ const ru = {
     err: 'Не удалось загрузить конверты.',
     retry: 'Повторить',
     views: '{n} просмотров',
-    copied: 'Ссылка скопирована ✓',
   },
   envelope: {
     back: 'К конвертам',
@@ -225,7 +223,6 @@ const en = {
     err: 'Could not load your envelopes.',
     retry: 'Try again',
     views: '{n} views',
-    copied: 'Link copied ✓',
   },
   envelope: {
     back: 'Back to envelopes',
