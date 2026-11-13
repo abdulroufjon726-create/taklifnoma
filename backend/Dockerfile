@@ -39,7 +39,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Backend fayllarini nusxalash
 COPY . .
 
-# Start script
-RUN chmod +x /app/start.sh
 
-CMD ["/app/start.sh"]
+# Start script formatini tuzatish
+RUN python -c "from pathlib import Path; p=Path('/app/start.sh'); b=p.read_bytes(); b=b.removeprefix(b'\xef\xbb\xbf').replace(b'\r\n', b'\n').replace(b'\r', b'\n'); p.write_bytes(b)" \
+    && chmod +x /app/start.sh
+
+# Skriptni sh orqali ishga tushirish
+CMD ["sh", "/app/start.sh"]
+
