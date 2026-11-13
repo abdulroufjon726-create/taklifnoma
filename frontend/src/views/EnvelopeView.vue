@@ -271,6 +271,10 @@ watch(locale, () => {
 .preview-card {
   min-width: 0;
 }
+.preview-box :deep(.stage) {
+  height: 100%;
+  min-height: 0;
+}
 .preview-label {
   margin-bottom: 0.5rem;
   font-size: 0.68rem;
@@ -280,7 +284,7 @@ watch(locale, () => {
 }
 .preview-box {
   position: relative;
-  height: clamp(28rem, 68vh, 44rem);
+  height: clamp(22rem, 62vh, 44rem);
   overflow: hidden;
   border-radius: 1.4rem;
   border: 1px solid rgba(255, 255, 255, 0.1);

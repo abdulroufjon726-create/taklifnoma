@@ -706,6 +706,7 @@ watch(locale, () => {
 }
 .hero {
   min-height: 0;
+  padding-bottom: 0.4rem;
 }
 .hero-title {
   font-size: clamp(1.9rem, min(6.4vh, 5.2vw), 3.4rem);
@@ -725,6 +726,7 @@ watch(locale, () => {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.7rem;
   margin: 0;
+  padding-bottom: 0;
 }
 .features .feature {
   padding: 0.8rem 0.9rem;
@@ -770,20 +772,81 @@ watch(locale, () => {
   .features {
     grid-template-columns: 1fr;
   }
-  .features .feature:nth-child(n + 2) {
-    display: none;
+  .features .feature {
+    display: block;
   }
   .steps-list {
     grid-template-columns: 1fr;
   }
-  .steps .step:nth-child(n + 2) {
-    display: none;
+  .steps .step {
+    display: flex;
   }
 }
-@media (max-height: 700px) {
-  .features,
+@media (max-width: 820px) {
+  /* Telefonda 3 qadam ham ko'rinadi — bitta ekranga sig'adi */
+  .home {
+    padding: 0.6rem 0.8rem 0.4rem;
+    gap: 0.5rem;
+  }
+  .hero-title {
+    font-size: clamp(1.45rem, 5vh, 2rem);
+  }
+  .hero-lead {
+    font-size: 0.76rem;
+    line-height: 1.4;
+  }
+  .hero-actions {
+    margin-top: 0.5rem;
+    gap: 0.4rem;
+  }
+  .hero-actions .btn {
+    min-height: 2.5rem;
+    font-size: 0.82rem;
+  }
   .hero-note {
+    margin-top: 0.35rem;
+    font-size: 0.68rem;
+  }
+  .features {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+  .features .feature {
+    padding: 0.45rem 0.4rem;
+  }
+  .features .feature h3 {
+    font-size: 0.68rem;
+    line-height: 1.2;
+  }
+  .features .feature p {
     display: none;
+  }
+  .steps .sec-title {
+    font-size: 0.95rem;
+    margin-bottom: 0.35rem;
+  }
+  .steps-list {
+    grid-template-columns: 1fr;
+    gap: 0.3rem;
+  }
+  .steps .step {
+    padding: 0.4rem 0.55rem;
+    gap: 0.5rem;
+  }
+  .steps .step h3 {
+    font-size: 0.78rem;
+  }
+  .steps .step p {
+    font-size: 0.68rem;
+    line-height: 1.3;
+  }
+  .steps .step-num {
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 0.72rem;
+  }
+  .foot {
+    font-size: 0.66rem;
   }
 }
 </style>

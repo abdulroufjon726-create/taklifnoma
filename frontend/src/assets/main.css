@@ -29,10 +29,9 @@ html,
 body,
 #app {
   height: 100%;
-  overflow: hidden;
 }
 
-/* Scroll ishlaydi, lekin scrollbar ko'rinmaydi (barcha brauzerlarda) */
+/* Scrollbar ko'rinmaydi, lekin sahifa "qotmaydi": scroll hamma joyda ishlaydi */
 * {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -43,11 +42,9 @@ body,
   display: none;
 }
 
-/* Bo'limlar bitta ekranga sig'adi: sarlavha 4rem, qolgani main ichida */
+/* Bo'limlar bitta ekranga sig'adi, lekin sig'masa ham pastga yetib boriladi */
 main {
-  height: calc(100dvh - 4rem);
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  min-height: calc(100dvh - 4rem);
 }
 
 body {

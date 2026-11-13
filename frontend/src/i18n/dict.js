@@ -973,10 +973,34 @@ const en = {
   yearSuffix: ',',
 }
 
-/* Bosh sahifa / hisob / kirish tarjimalari alohida faylda */
+/* Bosh sahifa / hisob / kirish tarjimalari alohida fayllarda.
+   Ichma-ich obyektlar ham qo'shiladi (masalan profile.* hamma fayldan yig'iladi). */
+function mergeDeep(base, ...parts) {
+  const out = { ...base }
+  for (const part of parts) {
+    if (!part) continue
+    for (const [key, value] of Object.entries(part)) {
+      const prev = out[key]
+      if (
+        value &&
+        typeof value === 'object' &&
+        !Array.isArray(value) &&
+        prev &&
+        typeof prev === 'object' &&
+        !Array.isArray(prev)
+      ) {
+        out[key] = mergeDeep(prev, value)
+      } else {
+        out[key] = value
+      }
+    }
+  }
+  return out
+}
+
 export const dict = {
-  uz: { ...uz, ...extra.uz, ...extra2.uz, ...extra3.uz, ...extra4.uz },
-  ru: { ...ru, ...extra.ru, ...extra2.ru, ...extra3.ru, ...extra4.ru },
-  en: { ...en, ...extra.en, ...extra2.en, ...extra3.en, ...extra4.en },
+  uz: mergeDeep(uz, extra.uz, extra2.uz, extra3.uz, extra4.uz),
+  ru: mergeDeep(ru, extra.ru, extra2.ru, extra3.ru, extra4.ru),
+  en: mergeDeep(en, extra.en, extra2.en, extra3.en, extra4.en),
 }
 export const LOCALES = ['uz', 'ru', 'en']

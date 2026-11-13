@@ -193,9 +193,24 @@ async function savePassword() {
 }
 .prof-stats {
   display: grid;
-  gap: 0.7rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin: 1.6rem 0;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  margin: 1.2rem 0;
+}
+@media (max-width: 520px) {
+  .stat {
+    padding: 0.6rem 0.5rem;
+  }
+  .stat b {
+    font-size: 1.15rem;
+  }
+  .stat span {
+    font-size: 0.6rem;
+    letter-spacing: 0.02em;
+  }
+  .stat b.method {
+    font-size: 0.85rem;
+  }
 }
 .stat {
   border-radius: 1rem;

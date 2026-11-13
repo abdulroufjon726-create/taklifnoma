@@ -254,13 +254,11 @@ onMounted(() => {
   margin-top: 0.2rem;
 }
 @media (max-width: 820px) {
-  .start .faq {
-    display: none;
+  .start .faq-grid {
+    grid-template-columns: 1fr;
   }
-}
-@media (max-height: 720px) {
-  .start .faq {
-    display: none;
+  .start .faq-card {
+    padding: 0.55rem 0.65rem;
   }
 }
 </style>
