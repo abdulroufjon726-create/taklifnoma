@@ -25,12 +25,6 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html,
-body,
-#app {
-  height: 100%;
-}
-
 /* Scrollbar ko'rinmaydi, lekin sahifa "qotmaydi": scroll hamma joyda ishlaydi */
 * {
   scrollbar-width: none;
@@ -42,18 +36,23 @@ body,
   display: none;
 }
 
-/* Bo'limlar bitta ekranga sig'adi, lekin sig'masa ham pastga yetib boriladi */
-main {
-  min-height: calc(100dvh - 4rem);
-}
-
 body {
   margin: 0;
-  background: var(--color-ink);
+  min-height: 100dvh;
   color: #fff;
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Bir xil fon butun sahifa bo'ylab (scroll paytida ham uzilish ko'rinmaydi) */
+  background-color: #0a0912;
+  background-image:
+    radial-gradient(90% 60% at 15% -5%, rgba(139, 92, 246, 0.22), transparent 60%),
+    radial-gradient(80% 55% at 95% 10%, rgba(245, 196, 81, 0.12), transparent 55%),
+    radial-gradient(100% 70% at 50% 110%, rgba(232, 121, 249, 0.16), transparent 60%),
+    linear-gradient(180deg, #0a0912 0%, #0d0b1a 50%, #0a0912 100%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 ::selection {
@@ -275,11 +274,7 @@ input[type="time"].field {
   inset: 0;
   z-index: -1;
   overflow: hidden;
-  background:
-    radial-gradient(90% 60% at 15% -5%, rgba(139, 92, 246, 0.22), transparent 60%),
-    radial-gradient(80% 55% at 95% 10%, rgba(245, 196, 81, 0.12), transparent 55%),
-    radial-gradient(100% 70% at 50% 110%, rgba(232, 121, 249, 0.16), transparent 60%),
-    linear-gradient(180deg, #0a0912 0%, #0d0b1a 50%, #0a0912 100%);
+  pointer-events: none;
 }
 .page-bg .orb {
   position: absolute;

@@ -11,7 +11,7 @@ sahifaga kod yoziladi va aynan o'sha taklifnoma ochiladi.
 | -------- | ------------------------------------ |
 | Frontend | Vue 3, Vite, Tailwind CSS 4, Vue Router |
 | Backend  | Python, Django 6, Django REST Framework |
-| BD       | SQLite                               |
+| BD       | PostgreSQL (prod) / SQLite (lokal)   |
 
 ## Ishga tushirish (development)
 
@@ -67,9 +67,11 @@ Render env variantlari (xizmat → Environment):
 - `DJANGO_ALLOWED_HOSTS` — `taklifnoma-1.onrender.com,.onrender.com`
 - `DJANGO_CORS_ORIGINS` — agar aniq domenga qisqartirilsa: `https://taklifnoma-007.vercel.app`
   (hozir bo'sh → hamma manzilga ruxsat, ochiq API kod orqali himoyalangan)
-- `DATABASE_URL` — **tavsiya etiladi**: Postgres (Neon/Supabase bepul) ulasangiz
-  taklifnomalar restartdan keyin ham saqlanadi; bo'sh bo'lsa SQLite ishlaydi, lekin
-  u vaqtinchalik (redeploy'da o'chadi)
+- `DATABASE_URL` — **majburiy (prod)**: Postgres (Render Postgres / Neon / Supabase,
+  pooled URL). Berilmasa faqat SQLite ishlatiladi va u prod'da mos emas.
+  **Diqqat:** avvalgi "Postgres ishlamasa SQLite'ga jimgina o'tish" olib tashlandi —
+  endi Postgres bo'lmasa `GET /api/health/` **503** qaytaradi va Render deploy'i
+  "unhealthy" bo'lib ko'rinadi (ma'lumot yo'qolmaydi, muammo darhol bilinadi).
 
 > Servis har ko'tarilishida `python manage.py migrate --noinput` bajariladi;
 > qo'shimcha himoya sifatida `config/wsgi.py` bo'sh bazani aniqlab, migratsiyani

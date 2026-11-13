@@ -21,26 +21,44 @@ logger = logging.getLogger(__name__)
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def health(request):
-    """Yengil health-check: servis va baza tirikmi (Render health probe)."""
+    """Health-check: servis va baza tirikmi (Render health probe).
+
+    Postgres sozlangan bo'lsa — faqat Postgres hisobga olinadi: u ishlamasa
+    503 qaytadi (SQLite'ga jimgina o'tish yo'q), shuning uchun muammo deployda
+    darhol ko'rinadi.
+    """
     engine = str(settings.DATABASES["default"].get("ENGINE", "")).rsplit(".", 1)[-1]
+    expects_postgres = bool(getattr(settings, "POSTGRES_DB_CONFIG", None))
+    body = {
+        "status": "ok",
+        "database": "ok",
+        "engine": engine,
+        "expected": "postgresql" if expects_postgres else "sqlite",
+    }
+    migration_error = getattr(settings, "MIGRATION_ERROR", "")
+    if migration_error:
+        body["migration_error"] = migration_error
+
+    if expects_postgres and engine != "postgresql":
+        body.update(
+            status="error",
+            database="down",
+            error="Postgres sozlangan, lekin ulanish ishlatilmayapti.",
+        )
+        return Response(body, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
             cursor.fetchone()
-    except Exception:
+    except Exception as exc:
         logger.exception("Health check failed")
-        return Response(
-            {"status": "error", "database": "down", "engine": engine},
-            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        body.update(
+            status="error",
+            database="down",
+            error=" ".join(str(exc).split())[:300],
         )
-    body = {"status": "ok", "database": "ok", "engine": engine}
-    fallback = getattr(settings, "DB_FALLBACK_REASON", "")
-    if fallback:
-        body["fallback"] = True
-        body["fallback_reason"] = fallback
-    migration_error = getattr(settings, "MIGRATION_ERROR", "")
-    if migration_error:
-        body["migration_error"] = migration_error
+        return Response(body, status=status.HTTP_503_SERVICE_UNAVAILABLE)
     return Response(body)
 
 

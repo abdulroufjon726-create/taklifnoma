@@ -88,10 +88,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# DATABASE_URL (masalan Render/Neon Postgres) berilsa — Postgres, aks holda SQLite
+# DATABASE_URL (Render/Neon Postgres) berilsa — faqat Postgres ishlatiladi,
+# bo'lmasa (lokal ishlab chiqishda) SQLite.
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
-# Postgres vaqtincha yetib bo'lmasa (Tailscale tunnel yopiq, baza o'chgan) API
-# butunlay 500 bo'lib qolmasin — SQLite'ga qaytamiz va buni health'da ko'rsatamiz.
+# SQLite'ga avtomatik o'tish (fallback) butunlay o'chirilgan.
+DB_FALLBACK_ENABLED = False
+# Faqat diagnostika uchun: dbswitch yozishi mumkin, health endi ishlatmaydi.
 DB_FALLBACK_REASON = ""
 
 
@@ -109,29 +111,6 @@ def _sqlite_database():
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
-
-
-def _postgres_reachable(cfg, timeout=5):
-    """Baza haqiqatan ochiladimi — bir marta, qisqa timeout bilan tekshiramiz."""
-    try:
-        import psycopg
-    except Exception as exc:  # psycopg o'rnatilmagan
-        return False, f"psycopg: {exc}"
-    options = cfg.get("OPTIONS") or {}
-    try:
-        conn = psycopg.connect(
-            host=cfg.get("HOST") or "",
-            port=cfg.get("PORT") or "5432",
-            dbname=cfg.get("NAME") or "",
-            user=cfg.get("USER") or "",
-            password=cfg.get("PASSWORD") or "",
-            connect_timeout=max(1, int(timeout)),
-            sslmode=options.get("sslmode", "prefer"),
-        )
-        conn.close()
-        return True, ""
-    except Exception as exc:
-        return False, str(exc).replace("\n", " ")[:300]
 
 
 if DATABASE_URL.startswith(("postgres://", "postgresql://")):
@@ -168,20 +147,10 @@ if DATABASE_URL.startswith(("postgres://", "postgresql://")):
     # config/dbswitch.py tomonidan ishlatiladi.
     POSTGRES_DB_CONFIG = _pg
 
-    if os.environ.get("DJANGO_DB_FALLBACK", "1") == "1":
-        _ok, _why = _postgres_reachable(_pg)
-        if _ok:
-            DATABASES = {"default": _pg}
-        else:
-            DB_FALLBACK_REASON = _why
-            import logging as _logging
-
-            _logging.getLogger("config.settings").warning(
-                "Postgres unreachable (%s) - using SQLite fallback", _why
-            )
-            DATABASES = _sqlite_database()
-    else:
-        DATABASES = {"default": _pg}
+    # MUHIM: SQLite'ga jimgina o'tish o'chirilgan.
+    # Postgres bo'lmasa ilova ishlamaydi va /api/health/ 503 qaytaradi —
+    # shunda deploy'da darhol ko'rinadi va taklifnomalar yo'qolmaydi.
+    DATABASES = {"default": _pg}
 else:
     DATABASES = _sqlite_database()
 

@@ -264,6 +264,8 @@ def switch_to_postgres() -> bool:
 
 def maybe_recover(force: bool = False) -> bool:
     """Fallback holatida bo'lsak, Postgres'ni qayta tekshiradi."""
+    if not getattr(settings, "DB_FALLBACK_ENABLED", False):
+        return False
     if not getattr(settings, "DB_FALLBACK_REASON", ""):
         return False
     if not postgres_ready():
@@ -288,6 +290,9 @@ def start_watchdog() -> bool:
             return False
         _started = True
 
+    if not getattr(settings, "DB_FALLBACK_ENABLED", False):
+        logger.info("SQLite fallback o'chirilgan - db-recovery watchdog ishga tushmaydi")
+        return False
     if not getattr(settings, "POSTGRES_DB_CONFIG", None):
         return False
 
