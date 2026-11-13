@@ -11,11 +11,6 @@ const routes = [
   { path: '/register', name: 'register', component: () => import('./views/LoginView.vue') },
   { path: '/start', name: 'start', component: () => import('./views/StartView.vue') },
   { path: '/envelopes', name: 'envelopes', component: () => import('./views/EnvelopesView.vue') },
-  {
-    path: '/envelopes/:code',
-    name: 'envelope',
-    component: () => import('./views/EnvelopeView.vue'),
-  },
   { path: '/account', name: 'account', component: () => import('./views/ProfileView.vue') },
   { path: '/auth', name: 'auth', component: () => import('./views/AuthView.vue') },
   { path: '/enter', name: 'enter', component: () => import('./views/EnterView.vue') },

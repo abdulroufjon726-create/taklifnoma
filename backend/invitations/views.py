@@ -144,6 +144,8 @@ def invitation_mine(request):
             "to_name",
             "event_at",
             "place",
+            "place_lat",
+            "place_lng",
             "theme",
             "ambient_effects",
             "particle_effects",

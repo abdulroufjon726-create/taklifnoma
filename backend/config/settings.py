@@ -66,7 +66,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "config.dbswitch.DatabaseSyncMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -91,17 +90,9 @@ WSGI_APPLICATION = "config.wsgi.application"
 # DATABASE_URL (Render/Neon Postgres) berilsa — faqat Postgres ishlatiladi,
 # bo'lmasa (lokal ishlab chiqishda) SQLite.
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
-# SQLite'ga avtomatik o'tish (fallback) butunlay o'chirilgan.
-DB_FALLBACK_ENABLED = False
-# Faqat diagnostika uchun: dbswitch yozishi mumkin, health endi ishlatmaydi.
-DB_FALLBACK_REASON = ""
 
-
+# Health-check "qaysi baza kutilgan" ni bilishi uchun (None = SQLite).
 POSTGRES_DB_CONFIG = None
-SQLITE_DB_CONFIG = {
-    "ENGINE": "django.db.backends.sqlite3",
-    "NAME": BASE_DIR / "db.sqlite3",
-}
 
 
 def _sqlite_database():
@@ -143,11 +134,10 @@ if DATABASE_URL.startswith(("postgres://", "postgresql://")):
         "CONN_MAX_AGE": 60,
         "OPTIONS": _db_options,
     }
-    # Eslatma: bu sozlamalar Postgres qaytganda avtomatik almashish uchun
-    # config/dbswitch.py tomonidan ishlatiladi.
+    # Health faqat shu belgi orqali "Postgres kutilgan" ekanini biladi.
     POSTGRES_DB_CONFIG = _pg
 
-    # MUHIM: SQLite'ga jimgina o'tish o'chirilgan.
+    # MUHIM: boshqa bazaga (SQLite'ga) jimgina o'tish yo'q.
     # Postgres bo'lmasa ilova ishlamaydi va /api/health/ 503 qaytaradi —
     # shunda deploy'da darhol ko'rinadi va taklifnomalar yo'qolmaydi.
     DATABASES = {"default": _pg}

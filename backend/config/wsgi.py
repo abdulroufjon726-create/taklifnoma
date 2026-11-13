@@ -4,8 +4,8 @@ WSGI config for the Taklifnoma project.
 Ishga tushishda sxema eskirgan yoki baza bo'sh bo'lishi mumkin — bunday holatda
 API 500 qaytaradi. Shu sababli migratsiyalar startupda fayl-lock bilan
 qo'llanadi (parallel worker'lar bir vaqtda migrate qilmaydi). Lock va
-migratsiya mantig'i `config.dbswitch` da — Postgres'ga avtomatik qaytishda ham
-o'sha ishlatiladi.
+migratsiya mantig'i `config.dbswitch` da.
+
 
 `DJANGO_AUTO_MIGRATE=0` bilan o'chirish mumkin — u holda migratsiyani
 `python manage.py migrate` qo'lda bajariladi.
@@ -42,10 +42,6 @@ try:
 
     django.setup()
     _ensure_schema()
-
-    from config import dbswitch
-
-    dbswitch.start_watchdog()
 except Exception:  # pragma: no cover - hech qachon serverni yiqitmaymiz
     logger.exception("WSGI bootstrap failed")
 
