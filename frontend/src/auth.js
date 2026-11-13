@@ -6,8 +6,6 @@ import { computed, reactive } from 'vue'
 
 import { API_BASE, getToken, setToken } from './api.js'
 
-const UID_KEY = 'taklifnoma:uid'
-
 export const auth = reactive({
   token: getToken(),
   user: null,
@@ -35,33 +33,8 @@ export function saveToken(token) {
 
 export function signOutLocal() {
   setToken('')
-  try {
-    localStorage.removeItem(UID_KEY)
-  } catch {
-    /* ignore */
-  }
   auth.token = ''
   auth.user = null
-}
-
-/* Hisob id'si tokendan oldin ham kerak bo'ladi (masalan keshni hisobga bog'lash
-   uchun) — shuning uchun localStorage'da saqlanadi. */
-export function currentUserId() {
-  try {
-    const raw = localStorage.getItem(UID_KEY)
-    return raw ? Number(raw) || null : null
-  } catch {
-    return null
-  }
-}
-
-function rememberUser(user) {
-  if (!user || !user.id) return
-  try {
-    localStorage.setItem(UID_KEY, String(user.id))
-  } catch {
-    /* ignore */
-  }
 }
 
 // api.js 401 ko'rsa shu hodisani yuboradi — UI darhol "chiqqan" holatga o'tadi.
@@ -107,7 +80,6 @@ async function fetchMe() {
     const data = await readJson(res)
     auth.user = res.ok ? data : null
     auth.error = res.ok ? '' : 'me'
-    rememberUser(auth.user)
     return auth.user
   } catch {
     auth.error = 'network'

@@ -150,14 +150,18 @@
               />
             </label>
 
-            <PlaceMap
-              :place="form.place"
-              :lat="form.place_lat"
-              :lng="form.place_lng"
-              @update:place="form.place = $event"
-              @update:lat="form.place_lat = $event"
-              @update:lng="form.place_lng = $event"
-            />
+            <div ref="mapSlot" class="map-slot">
+              <PlaceMap
+                v-if="mapReady"
+                :place="form.place"
+                :lat="form.place_lat"
+                :lng="form.place_lng"
+                @update:place="form.place = $event"
+                @update:lat="form.place_lat = $event"
+                @update:lng="form.place_lng = $event"
+              />
+              <div v-else class="map-skeleton" aria-hidden="true"></div>
+            </div>
           </div>
         </div>
 
@@ -428,7 +432,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { reactive, ref, shallowRef, computed, defineAsyncComponent, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ChoiceChips from '../components/ChoiceChips.vue'
 import AppIcon from '../components/AppIcon.vue'
@@ -444,7 +448,9 @@ import {
   warmUp,
 } from '../api.js'
 import { auth, loadMe, signOutLocal } from '../auth.js'
-import PlaceMap from '../components/PlaceMap.vue'
+/* Leaflet (150 KB) va plitkalar xarita maydoni ko'rinishga yaqinlashganda
+   yuklanadi — create/edit sahifasi darhol ochiladi. */
+const PlaceMap = defineAsyncComponent(() => import('../components/PlaceMap.vue'))
 import { getMine, saveMine } from '../data/mine.js'
 import { useI18n, tf } from '../i18n/index.js'
 import {
@@ -604,6 +610,21 @@ const submitError = ref('')
 const result = ref(null)
 const flash = ref('')
 const showFullscreen = ref(false)
+const mapReady = ref(false)
+const mapSlot = ref(null)
+let mapIO = null
+let mapTimer = null
+
+function showMap() {
+  if (mapReady.value) return
+  mapReady.value = true
+  if (mapIO) {
+    mapIO.disconnect()
+    mapIO = null
+  }
+  clearTimeout(mapTimer)
+  mapTimer = null
+}
 const qrData = ref('') // mahalliy QR — aynan shu taklifnoma havolasidan
 const lastCode = ref('')
 let flashTimer = null
@@ -650,15 +671,17 @@ function buildDraft() {
   }
 }
 
-const draft = ref(buildDraft())
+const draft = shallowRef(buildDraft())
 let draftTimer = null
 watch(
   form,
   () => {
     clearTimeout(draftTimer)
     draftTimer = setTimeout(() => {
-      draft.value = buildDraft()
-    }, 180)
+      // Bir xil holat qayta render qilmasin; 260ms — yozishda qotishsiz
+      const next = buildDraft()
+      if (JSON.stringify(next) !== JSON.stringify(draft.value)) draft.value = next
+    }, 260)
   },
   { deep: true },
 )
@@ -948,10 +971,24 @@ onMounted(async () => {
   } catch {
     lastCode.value = ''
   }
-  // localEditEntry() joriy hisobni bilishi kerak — avval profilni yuklaymiz
-  await loadMe()
-  await loadMine()
+  // Profil va ro'yxat parallel — edit ma'lumoti tezroq to'ldiriladi
+  await Promise.all([loadMe(), loadMine()])
   if (route.query.edit) loadForEdit(route.query.edit)
+  // Xarita faqat ko'rinish maydoniga yaqinlashganda mount bo'ladi
+  if (typeof IntersectionObserver === 'function' && mapSlot.value) {
+    mapIO = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return
+        showMap()
+      },
+      { rootMargin: '300px' },
+    )
+    mapIO.observe(mapSlot.value)
+    // Har holatda xarita chiqishi kerak: IO ishlamasa 6 soniyada yuklaymiz
+    mapTimer = setTimeout(showMap, 6000)
+  } else {
+    showMap()
+  }
   window.addEventListener('keydown', onKey)
 })
 
@@ -963,9 +1000,32 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  if (mapIO) mapIO.disconnect()
+  clearTimeout(mapTimer)
   window.removeEventListener('keydown', onKey)
   clearTimeout(flashTimer)
   clearTimeout(noteTimer)
   clearTimeout(draftTimer)
 })
 </script>
+
+<style scoped>
+.map-skeleton {
+  height: 258px;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+  background-size: 220% 100%;
+  animation: mapShimmer 1.4s linear infinite;
+}
+@keyframes mapShimmer {
+  to {
+    background-position: -120% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-skeleton {
+    animation: none;
+  }
+}
+</style>

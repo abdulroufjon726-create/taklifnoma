@@ -308,27 +308,24 @@ export async function copyText(text) {
     Render uxlab qolgan bo'lsa birinchi so'rov uzilishi mumkin — GET
     xavfsiz, shuning uchun bitta qayta urinamiz (ikkinchisi tez keladi). */
 export async function fetchMyInvitations() {
-  let res = null
-  for (let attempt = 0; attempt < 2 && !res; attempt += 1) {
+  for (let attempt = 0; ; attempt += 1) {
     try {
-      res = await request('/api/invitations/mine/')
+      const data = await parse(await request('/api/invitations/mine/'))
+      return data.results || []
     } catch (e) {
       const soft = e.name === 'AbortError' || e.name === 'TypeError'
-      if (!soft || attempt === 1) {
-        const err =
-          e.name === 'AbortError'
-            ? Object.assign(new Error("Server javob bermadi. Qayta urinib ko'ring."), {
-                status: 0,
-                code: 'timeout',
-              })
-            : networkError(e)
-        throw err
+      if (!soft || attempt >= 1) {
+        if (e.name === 'AbortError') {
+          throw Object.assign(new Error("Server javob bermadi. Qayta urinib ko'ring."), {
+            status: 0,
+            code: 'timeout',
+          })
+        }
+        throw e.name === 'TypeError' ? networkError(e) : e
       }
       await new Promise((r) => setTimeout(r, 800))
     }
   }
-  const data = await parse(res)
-  return data.results || []
 }
 
 /** Taklifnomani o'chirish (faqat egasi). */

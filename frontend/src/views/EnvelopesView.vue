@@ -223,7 +223,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { claimInvitation, copyText, deleteInvitation, fetchMyInvitations, shareUrl } from '../api.js'
-import { auth, currentUserId, loadMe } from '../auth.js'
+import { auth, loadMe } from '../auth.js'
 import { listMine, removeMine } from '../data/mine.js'
 import { THEMES, fontStack, prettyCode } from '../data/catalog.js'
 import { formatDate, useI18n } from '../i18n/index.js'
@@ -233,19 +233,21 @@ import SiteHeader from '../components/SiteHeader.vue'
 const { t, tf, locale } = useI18n()
 const router = useRouter()
 
-/* Oxirgi ro'yxat shu qurilmada saqlanadi — sahifa darhol ochiladi,
-   server javobi kelgach yangilanadi (Render uxlab qolgan bo'lsa ham). */
+/* Oxirgi ro'yxat shu qurilmada saqlanadi — server javobi sekin bo'lsa ham
+   sahifa darhol ochiladi. Kesh FAQAT /api/auth/me/ tasdiqlagan hisob id'siga
+   bog'lanadi: token egasi tasdiqlanmaguncha kesh o'qilmaydi ham, yozilmaydi. */
 const LIST_KEY = 'taklifnoma:list'
 const LIST_TTL = 6 * 60 * 60 * 1000
 
 function listCacheKey() {
-  return `${LIST_KEY}:${auth.user?.id ?? currentUserId() ?? 'guest'}`
+  return auth.user?.id ? `${LIST_KEY}:${auth.user.id}` : ''
 }
 
 function readListCache() {
+  const key = listCacheKey()
+  if (!key) return []
   try {
-    const raw = localStorage.getItem(listCacheKey())
-    const saved = raw ? JSON.parse(raw) : null
+    const saved = JSON.parse(localStorage.getItem(key) || 'null')
     if (!saved || Date.now() - saved.at > LIST_TTL || !Array.isArray(saved.items)) return []
     return saved.items
   } catch {
@@ -254,16 +256,17 @@ function readListCache() {
 }
 
 function writeListCache(list) {
+  const key = listCacheKey()
+  if (!key) return
   try {
-    localStorage.setItem(listCacheKey(), JSON.stringify({ at: Date.now(), items: list.slice(0, 60) }))
+    localStorage.setItem(key, JSON.stringify({ at: Date.now(), items: list.slice(0, 60) }))
   } catch {
     /* xotira to'lgan bo'lsa jim o'tamiz */
   }
 }
 
-const cachedList = readListCache()
-const items = ref(cachedList)
-const loading = ref(!cachedList.length)
+const items = ref([])
+const loading = ref(true)
 const error = ref('')
 const selected = ref(null)
 const confirming = ref(false)
@@ -324,7 +327,21 @@ async function load() {
   loading.value = !items.value.length
   error.value = ''
   try {
-    const [list] = await Promise.all([fetchMyInvitations(), auth.user ? null : loadMe()])
+    /* Ro'yxat va profil parallel: kesh faqat /me hisobni tasdiqlagach
+       ishlatiladi, shuning uchun avval shu javobni kutamiz. */
+    const minePromise = fetchMyInvitations()
+    minePromise.catch(() => {})
+    if (!auth.user) await loadMe()
+    if (!auth.user) {
+      router.replace({ path: '/login', query: { next: '/envelopes' } })
+      return
+    }
+    const cached = readListCache()
+    if (cached.length && !items.value.length) {
+      items.value = cached
+      loading.value = false
+    }
+    const list = await minePromise
 
     // Shu qurilmada saqlangan, hali egasi yo'q taklifnomalar
     const local = listMine()
