@@ -18,14 +18,25 @@ until [ -S /var/run/tailscale/tailscaled.sock ]; do
 done
 
 # Tailnetga ulanish
-tailscale --socket=/var/run/tailscale/tailscaled.sock up \
+echo "=== TAILSCALE UP BOSHLANDI ==="
+
+if ! tailscale --socket=/var/run/tailscale/tailscaled.sock up \
   --auth-key="$TS_AUTHKEY" \
-  --hostname=render-taklifnoma
+  --hostname=render-taklifnoma; then
+  echo "=== TAILSCALE UP XATOSI ==="
+  tailscale --socket=/var/run/tailscale/tailscaled.sock status || true
+  exit 1
+fi
+
+echo "=== TAILSCALE MUVAFFAQIYATLI ULANDI ==="
 
 # PostgreSQL uchun TCP ko'prik
+echo "=== GOST ISHGA TUSHMOQDA ==="
 gost \
   -L=tcp://127.0.0.1:15432/100.66.226.26:5432 \
   -F=socks5://127.0.0.1:1055 &
+
+echo "=== DJANGO ISHGA TUSHMOQDA ==="
 
 # Django
 exec gunicorn config.wsgi:application \
