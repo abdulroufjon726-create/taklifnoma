@@ -166,6 +166,44 @@ function lsSet(data) {
   }
 }
 
+/* ---- Muddati o'tgan keshni tozalash -----------------------------------
+   Kesh yozuvlari localStorage'da qolib ketmasin: eskirgan taklifnoma yoki
+   ro'yxat nusxasi keyingi ochilishda ko'rinib qolmasligi uchun har soatda
+   bir marta TTL'i o'tgan yozuvlarni o'chiramiz. */
+const PRUNE_KEY = 'taklifnoma:prune'
+const PRUNE_EVERY = 60 * 60 * 1000
+const PRUNE_RULES = [
+  [LS_PREFIX, LS_TTL], // taklifnoma:inv:<KOD>
+  ['taklifnoma:list:', 6 * 60 * 60 * 1000], // hisob ro'yxati keshi
+]
+
+export function pruneCaches() {
+  try {
+    if (Date.now() - Number(localStorage.getItem(PRUNE_KEY) || 0) < PRUNE_EVERY) return 0
+    localStorage.setItem(PRUNE_KEY, String(Date.now()))
+
+    let removed = 0
+    for (let i = localStorage.length - 1; i >= 0; i -= 1) {
+      const key = localStorage.key(i)
+      const rule = key && PRUNE_RULES.find(([prefix]) => key.startsWith(prefix))
+      if (!rule) continue
+      let at = 0
+      try {
+        at = Number(JSON.parse(localStorage.getItem(key) || '{}').at) || 0
+      } catch {
+        at = 0
+      }
+      if (!at || Date.now() - at > rule[1]) {
+        localStorage.removeItem(key)
+        removed += 1
+      }
+    }
+    return removed
+  } catch {
+    return 0
+  }
+}
+
 /** Kod bo'yicha keshdagi taklifnoma (bo'lsa — tarmoqsiz ochiladi). */
 export function getCachedInvitation(code) {
   const clean = normalizeCode(code)
