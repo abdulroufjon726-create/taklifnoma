@@ -13,7 +13,7 @@ tailscaled \
   --socket=/var/run/tailscale/tailscaled.sock &
 
 # Tailscale ishga tushishini kutish
-until tailscale --socket=/var/run/tailscale/tailscaled.sock status >/dev/null 2>&1; do
+until [ -S /var/run/tailscale/tailscaled.sock ]; do
   sleep 1
 done
 
