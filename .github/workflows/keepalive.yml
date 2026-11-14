@@ -1,0 +1,41 @@
+name: keep-alive
+
+# Render bepul instansiyasi 15 daqiqa harakatsizlikdan keyin uxlaydi va keyingi
+# birinchi so'rov 30-50 soniya kutadi. Har 10 daqiqada health-check yuborib uni
+# uyg'oq ushlab turamiz. /api/health/ bazaga SELECT 1 yuboradi — shu bilan
+# Postgres ulanishi (Neon bo'lsa uning compute'i) ham uyg'oq qoladi.
+#
+# GitHub cron ba'zan 5-15 daqiqaga kechikishi mumkin, shuning uchun bu 100%
+# kafolat emas; Starter instansiya yoki managed baza bu muammoni butunlay yopadi.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: keep-alive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Wake the backend and its database
+        run: |
+          url="https://taklifnoma-1.onrender.com/api/health/"
+          for attempt in 1 2 3; do
+            code=$(curl -s -o /tmp/health.json -w "%{http_code}" --max-time 60 "$url" || true)
+            echo "attempt $attempt -> HTTP $code $(cat /tmp/health.json 2>/dev/null)"
+            if [ "$code" = "200" ]; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::warning::health check did not return 200 - Render cold start, database offline or outage"
+
+      - name: Warm the frontend
+        run: |
+          curl -s -o /dev/null -w "frontend -> HTTP %{http_code}\n" --max-time 40 \
+            https://taklifnoma-007.vercel.app/ || true
