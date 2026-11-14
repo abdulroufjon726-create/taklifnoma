@@ -351,7 +351,8 @@ export async function fetchMyInvitations() {
       const data = await parse(await request('/api/invitations/mine/'))
       return data.results || []
     } catch (e) {
-      const soft = e.name === 'AbortError' || e.name === 'TypeError'
+      // 5xx — Render/DB vaqtincha yiqilgan bo'lishi mumkin, bir marta qayta urinamiz
+      const soft = e.name === 'AbortError' || e.name === 'TypeError' || (e.status >= 500 && e.status < 600)
       if (!soft || attempt >= 1) {
         if (e.name === 'AbortError') {
           throw Object.assign(new Error("Server javob bermadi. Qayta urinib ko'ring."), {

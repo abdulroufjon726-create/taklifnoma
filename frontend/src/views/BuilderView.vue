@@ -49,7 +49,7 @@
 
     <div class="grid items-start gap-8 lg:grid-cols-2">
       <!-- ============================ FORM ============================ -->
-      <section class="order-2 min-w-0 space-y-6 lg:order-1">
+      <section class="form-col order-2 min-w-0 space-y-6 lg:order-1">
         <!-- Mening taklifnomalarim -->
         <div v-if="mine.length || editError" class="glass card">
           <div class="flex items-center justify-between gap-3">
@@ -340,7 +340,9 @@
             </button>
           </div>
           <div class="relative aspect-[3/4] w-full overflow-hidden rounded-2xl ring-1 ring-white/10 lg:aspect-[4/3]">
-            <InvitationStage :data="draft" :paused="previewPaused" />
+            <!-- Sertifikat animatsiyalari birinchi chizishni bloklamasin -->
+            <InvitationStage v-if="previewReady" :data="draft" :paused="previewPaused" />
+            <div v-else class="stage-skeleton" aria-hidden="true"></div>
           </div>
           <p class="mt-3 text-center text-xs text-white/45">
             {{ t('builder.prevNote') }}
@@ -610,10 +612,15 @@ const submitError = ref('')
 const result = ref(null)
 const flash = ref('')
 const showFullscreen = ref(false)
+const previewReady = ref(false)
 const mapReady = ref(false)
 const mapSlot = ref(null)
 let mapIO = null
 let mapTimer = null
+
+function showPreview() {
+  previewReady.value = true
+}
 
 function showMap() {
   if (mapReady.value) return
@@ -966,6 +973,9 @@ onMounted(async () => {
   // Render bepul tarifi uxlab qolishi mumkin — forma to'ldirilayotganda
   // backendni oldindan uyg'otamiz, submit kutmaydi.
   warmUp()
+  // Sahnani birinchi chizishdan keyin mount qilamiz — forma darhol javob beradi
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(showPreview, { timeout: 400 })
+  else setTimeout(showPreview, 120)
   try {
     lastCode.value = localStorage.getItem('taklifnoma:last') || ''
   } catch {
@@ -1022,6 +1032,18 @@ onBeforeUnmount(() => {
   to {
     background-position: -120% 0;
   }
+}
+/* Ekrandan tashqaridagi kartalar birinchi renderda chizilmaydi —
+   create sahifasi tezroq ochiladi, skroll esa baribir silliq. */
+.form-col > .card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
+}
+.stage-skeleton {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(150deg, rgba(167, 139, 250, 0.22), rgba(14, 12, 24, 0.95));
 }
 @media (prefers-reduced-motion: reduce) {
   .map-skeleton {

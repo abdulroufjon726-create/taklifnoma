@@ -22,7 +22,7 @@
           </div>
         </RouterLink>
         <RouterLink v-else :to="registerTo" class="btn btn-primary head-login">
-          {{ t('nav.login') }}
+          {{ t('nav.register') }}
         </RouterLink>
       </nav>
     </div>
