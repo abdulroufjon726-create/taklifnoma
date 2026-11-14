@@ -24,6 +24,7 @@
         <RouterLink v-else :to="registerTo" class="btn btn-primary head-login">
           <AppIcon name="ph:user-plus" />
           <span class="hidden sm:inline">{{ t('nav.register') }}</span>
+          <span class="sm:hidden">{{ t('nav.login') }}</span>
         </RouterLink>
       </nav>
     </div>
@@ -121,14 +122,17 @@ const registerTo = computed(() => ({ path: '/register', query: { next: '/envelop
 /* Tor ekranda sarlavhadagi qo'shimcha tugmalar sig'maydi — yashiriladi */
 @media (max-width: 639px) {
   .site-head-in {
-    padding: 0 0.8rem;
+    padding: 0 0.55rem;
   }
   .head-nav {
-    gap: 0.35rem;
+    gap: 0.2rem;
   }
   .head-login {
-    padding: 0.55rem 0.75rem !important;
-    font-size: 0.78rem;
+    padding: 0.5rem 0.55rem !important;
+    font-size: 0.76rem;
+  }
+  .head-login :deep(.icn) {
+    display: none;
   }
 }
 .head-login {
