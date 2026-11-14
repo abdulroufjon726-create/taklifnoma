@@ -275,6 +275,11 @@ input[type="time"].field {
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
+  /* Blur + mask qatlami o'z kompozit qatlamida tursin: aks holda brauzer
+     ularni har skroll kadrida qaytadan rasterlaydi (1-1.5s qotish). */
+  transform: translateZ(0);
+  contain: strict;
+  backface-visibility: hidden;
 }
 .page-bg .orb {
   position: absolute;
@@ -282,6 +287,7 @@ input[type="time"].field {
   filter: blur(70px);
   opacity: 0.5;
   animation: orbFloat 16s ease-in-out infinite alternate;
+  will-change: transform;
 }
 .page-bg .orb-1 {
   width: 34vw;
