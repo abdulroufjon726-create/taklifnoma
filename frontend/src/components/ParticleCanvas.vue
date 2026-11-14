@@ -83,9 +83,17 @@ onBeforeUnmount(() => {
   engine = null
 })
 
+// Effektlar ro'yxati har renderda yangi massiv bo'lib keladi — bir xil
+// bo'lsa qayta qurmaymiz (yozish paytida har 260msda ishlamasin).
+let effectsKey = ''
 watch(
   () => props.effects,
-  (v) => engine && engine.setEffects(v || []),
+  (v) => {
+    const key = (v || []).join('|')
+    if (key === effectsKey) return
+    effectsKey = key
+    if (engine) engine.setEffects(v || [])
+  },
 )
 watch(
   () => props.palette,

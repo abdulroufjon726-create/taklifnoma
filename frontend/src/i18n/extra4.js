@@ -3,6 +3,7 @@
 const uz = {
   map: {
     searchPh: 'Manzilni yozing yoki xaritadan belgilang',
+    open: 'Xaritani ochish',
     find: 'Topish',
     myLocation: 'Joylashuvim',
     hint: 'Xaritaga bosing yoki manzilni yozib "Topish"ni bosing.',
@@ -33,6 +34,7 @@ const uz = {
 const ru = {
   map: {
     searchPh: 'Введите адрес или отметьте на карте',
+    open: 'Открыть карту',
     find: 'Найти',
     myLocation: 'Моё местоположение',
     hint: 'Нажмите на карту или введите адрес и нажмите «Найти».',
@@ -63,6 +65,7 @@ const ru = {
 const en = {
   map: {
     searchPh: 'Type an address or pick a point on the map',
+    open: 'Open the map',
     find: 'Find',
     myLocation: 'My location',
     hint: 'Tap the map, or type an address and press Find.',

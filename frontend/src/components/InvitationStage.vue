@@ -31,7 +31,8 @@
       <div v-if="texts.length" class="st-texts">
         <AnimatedText
           v-for="(t, i) in texts"
-          :key="`${i}-${t}`"
+          :key="i"
+          v-memo="[t]"
           class="st-text"
           tag="p"
           :text="t"

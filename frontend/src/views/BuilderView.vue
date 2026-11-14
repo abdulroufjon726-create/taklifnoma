@@ -160,7 +160,10 @@
                 @update:lat="form.place_lat = $event"
                 @update:lng="form.place_lng = $event"
               />
-              <div v-else class="map-skeleton" aria-hidden="true"></div>
+              <button v-else class="map-skeleton map-open" type="button" @click="showMap">
+                <AppIcon name="ph:map-pin" />
+                {{ t('map.open') }}
+              </button>
             </div>
           </div>
         </div>
@@ -615,22 +618,15 @@ const showFullscreen = ref(false)
 const previewReady = ref(false)
 const mapReady = ref(false)
 const mapSlot = ref(null)
-let mapIO = null
-let mapTimer = null
-
 function showPreview() {
   previewReady.value = true
 }
 
+/* Leaflet (150 KB) faqat foydalanuvchi xaritani ochganda yuklanadi —
+   IO/skroll orqali avtomatik mount qilinsa, u aynan yozish paytida
+   ~300ms qotish berardi. */
 function showMap() {
-  if (mapReady.value) return
   mapReady.value = true
-  if (mapIO) {
-    mapIO.disconnect()
-    mapIO = null
-  }
-  clearTimeout(mapTimer)
-  mapTimer = null
 }
 const qrData = ref('') // mahalliy QR — aynan shu taklifnoma havolasidan
 const lastCode = ref('')
@@ -685,10 +681,11 @@ watch(
   () => {
     clearTimeout(draftTimer)
     draftTimer = setTimeout(() => {
-      // Bir xil holat qayta render qilmasin; 260ms — yozishda qotishsiz
+      // Bir xil holat qayta render qilmasin. 500ms: yozish paytida sahna
+      // qayta-qayta chizilmaydi, preview esa baribir "darhol" yangilanadi.
       const next = buildDraft()
       if (JSON.stringify(next) !== JSON.stringify(draft.value)) draft.value = next
-    }, 260)
+    }, 500)
   },
   { deep: true },
 )
@@ -984,21 +981,6 @@ onMounted(async () => {
   // Profil va ro'yxat parallel — edit ma'lumoti tezroq to'ldiriladi
   await Promise.all([loadMe(), loadMine()])
   if (route.query.edit) loadForEdit(route.query.edit)
-  // Xarita faqat ko'rinish maydoniga yaqinlashganda mount bo'ladi
-  if (typeof IntersectionObserver === 'function' && mapSlot.value) {
-    mapIO = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((e) => e.isIntersecting)) return
-        showMap()
-      },
-      { rootMargin: '300px' },
-    )
-    mapIO.observe(mapSlot.value)
-    // Har holatda xarita chiqishi kerak: IO ishlamasa 6 soniyada yuklaymiz
-    mapTimer = setTimeout(showMap, 6000)
-  } else {
-    showMap()
-  }
   window.addEventListener('keydown', onKey)
 })
 
@@ -1010,8 +992,6 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  if (mapIO) mapIO.disconnect()
-  clearTimeout(mapTimer)
   window.removeEventListener('keydown', onKey)
   clearTimeout(flashTimer)
   clearTimeout(noteTimer)
@@ -1033,17 +1013,26 @@ onBeforeUnmount(() => {
     background-position: -120% 0;
   }
 }
-/* Ekrandan tashqaridagi kartalar birinchi renderda chizilmaydi —
-   create sahifasi tezroq ochiladi, skroll esa baribir silliq. */
-.form-col > .card {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 320px;
-}
 .stage-skeleton {
   position: absolute;
   inset: 0;
   border-radius: inherit;
   background: linear-gradient(150deg, rgba(167, 139, 250, 0.22), rgba(14, 12, 24, 0.95));
+}
+.map-open {
+  display: grid;
+  place-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+.map-open:hover {
+  color: #fff;
+  border-color: rgba(167, 139, 250, 0.5);
 }
 @media (prefers-reduced-motion: reduce) {
   .map-skeleton {
