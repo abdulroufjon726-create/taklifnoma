@@ -3,7 +3,7 @@
     <div class="site-head-in">
       <RouterLink to="/" class="brand">
         <span class="brand-icn"><AppIcon name="ph:envelope-simple" size="1.35rem" /></span>
-        <span class="grad-text font-display text-2xl font-semibold">Taklifnoma</span>
+        <span class="brand-name grad-text font-display text-2xl font-semibold">Taklifnoma</span>
       </RouterLink>
 
       <nav class="head-nav">
@@ -22,9 +22,7 @@
           </div>
         </RouterLink>
         <RouterLink v-else :to="registerTo" class="btn btn-primary head-login">
-          <AppIcon name="ph:user-plus" />
-          <span class="hidden sm:inline">{{ t('nav.register') }}</span>
-          <span class="sm:hidden">{{ t('nav.login') }}</span>
+          {{ t('nav.login') }}
         </RouterLink>
       </nav>
     </div>
@@ -72,12 +70,7 @@ const registerTo = computed(() => ({ path: '/register', query: { next: '/envelop
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0 1rem;
-}
-@media (min-width: 640px) {
-  .site-head-in {
-    padding: 0 1.5rem;
-  }
+  padding: 0 clamp(0.55rem, 3vw, 1.5rem);
 }
 .brand {
   display: flex;
@@ -97,7 +90,7 @@ const registerTo = computed(() => ({ path: '/register', query: { next: '/envelop
 .head-nav {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: clamp(0.3rem, 1vw, 0.5rem);
 }
 .nav-link {
   display: none;
@@ -119,26 +112,15 @@ const registerTo = computed(() => ({ path: '/register', query: { next: '/envelop
     margin-right: 0.5rem;
   }
 }
-/* Tor ekranda sarlavhadagi qo'shimcha tugmalar sig'maydi — yashiriladi */
-@media (max-width: 639px) {
-  .site-head-in {
-    padding: 0 0.55rem;
-  }
-  .head-nav {
-    gap: 0.2rem;
-  }
-  .head-login {
-    padding: 0.5rem 0.55rem !important;
-    font-size: 0.76rem;
-  }
-  .head-login :deep(.icn) {
+/* Eng tor ekranlarda faqat belgi qoladi — til tugmalari va CTA sig'sin */
+@media (max-width: 399px) {
+  .brand-name {
     display: none;
   }
 }
 .head-login {
-  padding: 0.6rem 1rem !important;
-  font-size: 0.85rem;
-  border-radius: 0.95rem;
+  padding: 0.6rem 1rem;
+  font-size: 0.82rem;
 }
 .head-user {
   display: flex;
