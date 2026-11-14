@@ -21,7 +21,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 import AppIcon from './AppIcon.vue'
-import { useI18n } from '../i18n/index.js'
+import { useI18n, tf } from '../i18n/index.js'
 
 const props = defineProps({
   lat: { type: Number, required: true },
@@ -98,7 +98,7 @@ async function routeFromMe() {
         map.fitBounds(routeLine.getBounds(), { padding: [24, 24] })
         const km = (route.distance / 1000).toFixed(route.distance > 10000 ? 0 : 1)
         const min = Math.max(1, Math.round(route.duration / 60))
-        summary.value = t('map.routeSummary', { km, min })
+        summary.value = tf('map.routeSummary', { km, min })
       } catch {
         summary.value = t('map.noRoute')
       } finally {

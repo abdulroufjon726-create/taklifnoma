@@ -331,12 +331,19 @@ async function share() {
   setTimeout(() => (copied.value = false), 2400)
 }
 
+/* Xarita oynasi Escape bilan ham yopiladi — builder'dagi bilan bir xil. */
+function onKey(e) {
+  if (e.key === 'Escape' && showRoute.value) showRoute.value = false
+}
+
 onMounted(() => {
   load()
   document.addEventListener('fullscreenchange', onFsChange)
+  window.addEventListener('keydown', onKey)
 })
 onBeforeUnmount(() => {
   document.removeEventListener('fullscreenchange', onFsChange)
+  window.removeEventListener('keydown', onKey)
   clearTimeout(slowTimer)
   // Sahifadan chiqsak to'liq ekrandan chiqamiz
   if (document.fullscreenElement && typeof document.exitFullscreen === 'function') {

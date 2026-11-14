@@ -51,6 +51,8 @@
           v-if="hasPoint"
           type="button"
           class="st-place st-place-btn"
+          :title="t('map.open')"
+          :aria-label="`${data.place || t('map.venue')} — ${t('map.open')}`"
           @click="emit('place-route')"
         >
           <AppIcon name="ph:map-pin" /> {{ data.place || t('map.venue') }}
