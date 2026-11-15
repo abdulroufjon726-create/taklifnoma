@@ -11,6 +11,7 @@ SECRET_KEY = os.environ.get(
     "django-insecure-dev-key-change-me-in-production-9f2a1c",
 )
 
+# Productionda Render'da DJANGO_DEBUG=0 qo'ying (collectstatic qo'shilgandan keyin).
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
 
 # Render/Vercel uchun vergul bilan ajratilgan ro'yxat: "example.com,example2.com"
@@ -97,8 +98,8 @@ if DATABASE_URL.startswith(("postgres://", "postgresql://")):
     _db = urlparse(DATABASE_URL)
     _query = parse_qs(_db.query)
     # sslmode'ni majburan "require" qilmaymiz: Tailscale/GOST orqali ulangan
-    # lokal Postgres SSL'ni qo'llab-quvvatlamasligi mumkin (aqlli standart —
-    # psycopg'ning "prefer"i: imkon bo'lsa SSL, bo'lmasa oddiy ulanish).
+    # lokal Postgres SSL'ni qo'llab-quvvatlamasligi mumkin (psycopg'ning
+    # "prefer"i: imkon bo'lsa SSL, bo'lmasa oddiy ulanish).
     # Agar URL'da ?sslmode=... berilgan bo'lsa — aynan o'shanisi ishlatiladi.
     _db_options = {}
     if "sslmode" in _query and _query["sslmode"]:
@@ -106,7 +107,6 @@ if DATABASE_URL.startswith(("postgres://", "postgresql://")):
     elif _db.hostname not in ("127.0.0.1", "localhost", "::1", None):
         _db_options["sslmode"] = "require"
     # Osilib qolmasin: baza yopiq bo'lsa health-check ~10 soniyada javob beradi
-    # (Neon/Render baza uyqudan uyg'onishi 5 soniyadan oshishi mumkin)
     try:
         _db_options["connect_timeout"] = max(1, int(os.environ.get("DJANGO_DB_CONNECT_TIMEOUT", "10")))
     except ValueError:
@@ -119,7 +119,11 @@ if DATABASE_URL.startswith(("postgres://", "postgresql://")):
         "PASSWORD": unquote(_db.password or ""),
         "HOST": _db.hostname or "",
         "PORT": str(_db.port or 5432),
+        # Ulanishni 60 soniya qayta ishlatish (Tailscale orqali har ulanish ~0.6s).
         "CONN_MAX_AGE": 60,
+        # Telefon/Tailscale uzilib qolsa, eskirgan ulanish 500 xato bermasligi
+        # uchun har so'rov oldidan ulanish tirikligi tekshiriladi (Django 4.1+).
+        "CONN_HEALTH_CHECKS": True,
         "OPTIONS": _db_options,
     }
     # MUHIM: boshqa bazaga (SQLite'ga) jimgina o'tish yo'q.
@@ -154,20 +158,20 @@ STORAGES = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# ---------------------------------------------------------------------------
-# CORS (Vite dev server runs on another port during development)
-# ---------------------------------------------------------------------------
 # ---- Google bilan kirish -------------------------------------------------
 # Google Cloud Console → APIs & Services → Credentials → OAuth client (Web).
 # Authorized redirect URI: https://<backend>/api/auth/google/callback/
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "").strip()
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "").strip()
 GOOGLE_REDIRECT_URI = os.environ.get("GOOGLE_REDIRECT_URI", "").strip()
-# Login tugagach qaytadigan frontend manzili (Vercel domeni)
+# Login tugagach qaytadigan frontend manzili (Vercel domeni).
 # Bo'sh bo'lsa — Google qaytish manzili brauzer yuborgan (tekshirilgan) origin'dan
 # olinadi, shuning uchun prod'da localhost'ga qaytib qolmaydi.
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "").strip()
 
+# ---------------------------------------------------------------------------
+# CORS (Vite dev server runs on another port during development)
+# ---------------------------------------------------------------------------
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
