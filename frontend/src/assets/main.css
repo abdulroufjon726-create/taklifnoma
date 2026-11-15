@@ -284,8 +284,9 @@ input[type="time"].field {
 .page-bg .orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(70px);
-  opacity: 0.5;
+  /* blur(70px) o'rniga yumshoq radial gradient: ko'rinishi deyarli bir xil,
+     lekin animatsiya paytida filtr har kadrda qayta hisoblanmaydi. */
+  opacity: 0.6;
   animation: orbFloat 16s ease-in-out infinite alternate;
   will-change: transform;
 }
