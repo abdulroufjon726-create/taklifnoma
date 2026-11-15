@@ -39,6 +39,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Backend fayllarini nusxalash
 COPY . .
 
+RUN python manage.py collectstatic --noinput
+
 
 # Start script formatini tuzatish
 RUN python -c "from pathlib import Path; p=Path('/app/start.sh'); b=p.read_bytes(); b=b.removeprefix(b'\xef\xbb\xbf').replace(b'\r\n', b'\n').replace(b'\r', b'\n'); p.write_bytes(b)" \
