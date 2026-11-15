@@ -7,18 +7,15 @@
   </div>
 
   <!-- Header -->
-  <header class="sticky top-0 z-40 rounded-b-2xl border-b border-white/[0.06] bg-ink/70 backdrop-blur-xl">
+  <header class="sticky top-0 z-40 rounded-b-2xl border-b border-white/[0.06] bg-ink/[0.92]">
     <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
       <RouterLink to="/" class="flex items-center gap-2.5">
         <AppIcon name="ph:envelope-simple" size="1.7rem" class="text-accent" />
         <span class="grad-text font-display text-2xl font-semibold">Taklifnoma</span>
       </RouterLink>
       <nav class="flex min-w-0 items-center gap-2 sm:gap-3">
-        <RouterLink
-          v-if="lastCode"
-          :to="`/i/${lastCode}`"
-          class="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-2 text-xs text-white/70 transition hover:border-accent/50 hover:text-white sm:inline-flex"
-        >
+        <RouterLink v-if="lastCode" :to="`/i/${lastCode}`"
+          class="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-2 text-xs text-white/70 transition hover:border-accent/50 hover:text-white sm:inline-flex">
           {{ t('nav.last') }} <b class="font-semibold tracking-widest text-gold">{{ prettyCode(lastCode) }}</b> →
         </RouterLink>
         <RouterLink to="/enter" class="btn btn-ghost !px-3 !py-2 text-sm !hidden sm:!inline-flex sm:!px-4">
@@ -58,20 +55,19 @@
               {{ t('nav.envelopes') }} →
             </RouterLink>
           </div>
-          <p v-if="editError" class="mt-3 rounded-xl border border-amber-300/30 bg-amber-300/10 px-4 py-2.5 text-xs leading-relaxed text-amber-200">
+          <p v-if="editError"
+            class="mt-3 rounded-xl border border-amber-300/30 bg-amber-300/10 px-4 py-2.5 text-xs leading-relaxed text-amber-200">
             {{ editError }}
           </p>
           <div class="mt-4 space-y-2">
-            <div
-              v-for="e in mine.slice(0, 5)"
-              :key="e.code"
-              class="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2"
-            >
+            <div v-for="e in mine.slice(0, 5)" :key="e.code"
+              class="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2">
               <span class="min-w-0 flex-1 truncate text-sm text-white/75">
                 {{ e.payload?.first_name || e.code }}
                 <b class="ml-1 tracking-widest text-gold">{{ prettyCode(e.code) }}</b>
               </span>
-              <RouterLink :to="`/create?edit=${e.code}`" class="chip !py-1 !text-xs">{{ t('builder.edit') }}</RouterLink>
+              <RouterLink :to="`/create?edit=${e.code}`" class="chip !py-1 !text-xs">{{ t('builder.edit') }}
+              </RouterLink>
               <RouterLink :to="`/i/${e.code}`" class="chip !py-1 !text-xs">{{ t('builder.open') }}</RouterLink>
             </div>
           </div>
@@ -88,10 +84,8 @@
                 <AppIcon name="ph:calendar-blank" />
                 {{ currentHoliday ? t('holidayHint.' + form.category) : t('builder.hintDefault') }}
               </p>
-              <p
-                v-if="presetNote"
-                class="slide-down mt-3 rounded-xl border border-accent/25 bg-accent/[0.08] px-4 py-2.5 text-xs leading-relaxed text-white/75"
-              >
+              <p v-if="presetNote"
+                class="slide-down mt-3 rounded-xl border border-accent/25 bg-accent/[0.08] px-4 py-2.5 text-xs leading-relaxed text-white/75">
                 <AppIcon name="ph:sparkle" />
                 {{ presetNote }}
               </p>
@@ -100,66 +94,40 @@
             <div class="grid gap-4 sm:grid-cols-2">
               <label class="block">
                 <span class="lbl">{{ t('builder.fName') }}</span>
-                <input
-                  v-model="form.first_name"
-                  class="field"
-                  :class="{ err: showErrors && !form.first_name.trim() }"
-                  type="text"
-                  maxlength="80"
-                  placeholder="Masalan: Aziz"
-                />
+                <input v-model="form.first_name" class="field" :class="{ err: showErrors && !form.first_name.trim() }"
+                  type="text" maxlength="80" placeholder="Masalan: Aziz" />
                 <span v-if="showErrors && !form.first_name.trim()" class="err-text">{{ t('builder.fNameErr') }}</span>
               </label>
               <label class="block">
                 <span class="lbl">{{ t('builder.fLast') }}</span>
-                <input v-model="form.last_name" class="field" type="text" maxlength="80" :placeholder="t('builder.fLastPh')" />
+                <input v-model="form.last_name" class="field" type="text" maxlength="80"
+                  :placeholder="t('builder.fLastPh')" />
               </label>
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
               <label class="block">
                 <span class="lbl">{{ t('builder.fTo') }}</span>
-                <input
-                  v-model="form.to_name"
-                  class="field"
-                  type="text"
-                  maxlength="120"
-                  :placeholder="t('builder.fToPh')"
-                />
+                <input v-model="form.to_name" class="field" type="text" maxlength="120"
+                  :placeholder="t('builder.fToPh')" />
               </label>
               <label class="block">
                 <span class="lbl">{{ t('builder.fFrom') }}</span>
-                <input
-                  v-model="form.from_name"
-                  class="field"
-                  type="text"
-                  maxlength="120"
-                  :placeholder="t('builder.fFromPh')"
-                />
+                <input v-model="form.from_name" class="field" type="text" maxlength="120"
+                  :placeholder="t('builder.fFromPh')" />
               </label>
             </div>
 
             <label class="block">
               <span class="lbl">{{ t('builder.fPlace') }}</span>
-              <input
-                v-model="form.place"
-                class="field"
-                type="text"
-                maxlength="200"
-                :placeholder="t('builder.fPlacePh')"
-              />
+              <input v-model="form.place" class="field" type="text" maxlength="200"
+                :placeholder="t('builder.fPlacePh')" />
             </label>
 
             <div ref="mapSlot" class="map-slot">
-              <PlaceMap
-                v-if="mapReady"
-                :place="form.place"
-                :lat="form.place_lat"
-                :lng="form.place_lng"
-                @update:place="form.place = $event"
-                @update:lat="form.place_lat = $event"
-                @update:lng="form.place_lng = $event"
-              />
+              <PlaceMap v-if="mapReady" :place="form.place" :lat="form.place_lat" :lng="form.place_lng"
+                @update:place="form.place = $event" @update:lat="form.place_lat = $event"
+                @update:lng="form.place_lng = $event" />
               <button v-else class="map-skeleton map-open" type="button" @click="showMap">
                 <AppIcon name="ph:map-pin" />
                 {{ t('map.open') }}
@@ -175,41 +143,27 @@
             <div class="grid gap-4 sm:grid-cols-2">
               <label class="block">
                 <span class="lbl">{{ t('builder.fDate') }}</span>
-                <input
-                  v-model="form.date"
-                  class="field"
-                  :class="{ err: showErrors && !form.date }"
-                  type="date"
-                  :min="todayStr"
-                />
+                <input v-model="form.date" class="field" :class="{ err: showErrors && !form.date }" type="date"
+                  :min="todayStr" />
                 <span v-if="showErrors && !form.date" class="err-text">{{ t('builder.fDateErr') }}</span>
               </label>
               <label class="block">
                 <span class="lbl">{{ t('builder.fTime') }}</span>
-                <input
-                  v-model="form.time"
-                  class="field"
-                  :class="{ err: showErrors && !form.time }"
-                  type="time"
-                />
+                <input v-model="form.time" class="field" :class="{ err: showErrors && !form.time }" type="time" />
                 <span v-if="showErrors && !form.time" class="err-text">{{ t('builder.fTimeErr') }}</span>
               </label>
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
               <span class="text-xs text-white/45">{{ t('builder.quickLbl') }}</span>
-              <button
-                v-for="q in quickDates"
-                :key="q.label"
-                type="button"
-                class="chip !py-1.5 !text-xs"
-                @click="applyQuick(q.days)"
-              >
+              <button v-for="q in quickDates" :key="q.label" type="button" class="chip !py-1.5 !text-xs"
+                @click="applyQuick(q.days)">
                 {{ q.label }}
               </button>
             </div>
 
-            <p class="flex items-start gap-2 rounded-xl border border-accent/20 bg-accent/[0.07] px-4 py-3 text-sm text-white/70">
+            <p
+              class="flex items-start gap-2 rounded-xl border border-accent/20 bg-accent/[0.07] px-4 py-3 text-sm text-white/70">
               <AppIcon name="ph:hourglass" class="mt-0.5" />
               <span>
                 {{ t('builder.timerA') }}<b class="text-gold">{{ t('builder.timerB') }}</b>{{ t('builder.timerC') }}
@@ -232,12 +186,9 @@
           <div class="mt-5">
             <ChoiceChips :options="themeOptions" v-model="form.theme">
               <template #item="{ o }">
-                <span
-                  class="size-4 rounded-full ring-1 ring-white/30"
-                  :style="{
-                    background: `linear-gradient(135deg, ${o.swatch[0]} 0%, ${o.swatch[1]} 55%, ${o.swatch[2]} 100%)`,
-                  }"
-                ></span>
+                <span class="size-4 rounded-full ring-1 ring-white/30" :style="{
+                  background: `linear-gradient(135deg, ${o.swatch[0]} 0%, ${o.swatch[1]} 55%, ${o.swatch[2]} 100%)`,
+                }"></span>
                 {{ o.label || o.name }}
               </template>
             </ChoiceChips>
@@ -276,7 +227,8 @@
               </div>
             </div>
 
-            <p class="flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs leading-relaxed text-white/55">
+            <p
+              class="flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs leading-relaxed text-white/55">
               <AppIcon name="ph:sparkle" class="mt-0.5" />
               <span><b class="text-white/80">{{ t('builder.stdA') }}</b>{{ t('builder.stdB') }}</span>
             </p>
@@ -298,11 +250,8 @@
             <span class="lbl">{{ t('builder.textFonts') }}</span>
             <div v-for="(txt, i) in form.texts" :key="`f-${i}`" class="flex items-center gap-2">
               <span class="min-w-0 flex-1 truncate text-xs text-white/50">«{{ txt }}»</span>
-              <select
-                v-model="form.fonts.texts[i]"
-                class="field !w-auto shrink-0 !py-1.5 !text-xs"
-                :style="{ fontFamily: fontStack(form.fonts.texts[i]) }"
-              >
+              <select v-model="form.fonts.texts[i]" class="field !w-auto shrink-0 !py-1.5 !text-xs"
+                :style="{ fontFamily: fontStack(form.fonts.texts[i]) }">
                 <option v-for="f in FONTS" :key="f.id" :value="f.id">{{ f.label }}</option>
               </select>
             </div>
@@ -311,17 +260,22 @@
 
         <!-- Yaratish -->
         <div class="glass card text-center">
-          <p v-if="editing" class="mb-3 inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-4 py-1.5 text-xs text-white/80">
+          <p v-if="editing"
+            class="mb-3 inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-4 py-1.5 text-xs text-white/80">
             {{ t('builder.editingNow') }} · <b class="tracking-widest text-gold">{{ prettyCode(editing.code) }}</b>
           </p>
-          <button class="btn btn-primary w-full px-8 text-lg sm:w-auto" type="button" :disabled="loading" @click="submit">
+          <button class="btn btn-primary w-full px-8 text-lg sm:w-auto" type="button" :disabled="loading"
+            @click="submit">
             <template v-if="loading">
               <span class="size-4 animate-spin rounded-full border-2 border-black/30 border-t-black"></span>
               {{ t('builder.submitting') }}
             </template>
-            <template v-else><AppIcon name="ph:sparkle" /> {{ editing ? t('builder.saveBtn') : t('builder.submit') }}</template>
+            <template v-else>
+              <AppIcon name="ph:sparkle" /> {{ editing ? t('builder.saveBtn') : t('builder.submit') }}
+            </template>
           </button>
-          <button v-if="editing" class="btn btn-ghost mt-3 w-full sm:ml-3 sm:mt-0 sm:w-auto" type="button" @click="cancelEdit">
+          <button v-if="editing" class="btn btn-ghost mt-3 w-full sm:ml-3 sm:mt-0 sm:w-auto" type="button"
+            @click="cancelEdit">
             {{ t('builder.cancelEdit') }}
           </button>
           <p v-if="submitError" class="err-text flex items-center justify-center gap-1.5" role="alert">
@@ -342,7 +296,8 @@
               <AppIcon name="ph:arrows-out" /> {{ t('builder.fullscreen') }}
             </button>
           </div>
-          <div class="relative aspect-[3/4] w-full overflow-hidden rounded-2xl ring-1 ring-white/10 lg:aspect-[4/3]">
+          <div ref="previewBox"
+            class="preview-box relative aspect-[3/4] w-full overflow-hidden rounded-2xl ring-1 ring-white/10 lg:aspect-[4/3]">
             <!-- Sertifikat animatsiyalari birinchi chizishni bloklamasin -->
             <InvitationStage v-if="previewReady" :data="draft" :paused="previewPaused" />
             <div v-else class="stage-skeleton" aria-hidden="true"></div>
@@ -360,33 +315,26 @@
     <InvitationStage :data="draft" />
     <button
       class="glass absolute top-4 right-4 z-20 rounded-full px-4 py-2 text-sm font-medium transition hover:text-white"
-      type="button"
-      @click="showFullscreen = false"
-    >
+      type="button" @click="showFullscreen = false">
       {{ t('builder.close') }}
     </button>
   </div>
 
   <!-- Natija: kod + havola -->
-  <div
-    v-if="result"
-    class="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/80 p-4 backdrop-blur-sm"
-    @click.self="closeResult"
-  >
+  <div v-if="result" class="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/80 p-4"
+    @click.self="closeResult">
     <div class="glass card modal-in relative w-full max-w-lg p-6 text-center sm:p-8">
       <button
         class="absolute top-4 right-4 grid size-9 place-items-center rounded-full bg-white/5 text-white/60 transition hover:bg-white/10 hover:text-white"
-        type="button"
-        aria-label="Yopish"
-        @click="closeResult"
-      >
+        type="button" aria-label="Yopish" @click="closeResult">
         ✕
       </button>
 
       <div class="mx-auto mb-3 grid size-14 place-items-center rounded-2xl bg-white/5 text-accent ring-1 ring-white/10">
         <AppIcon name="ph:confetti" size="1.7rem" />
       </div>
-      <h2 class="font-display text-3xl font-semibold">{{ result.updated ? t('builder.updatedTitle') : t('builder.resTitle') }}</h2>
+      <h2 class="font-display text-3xl font-semibold">{{ result.updated ? t('builder.updatedTitle') :
+        t('builder.resTitle') }}</h2>
       <p class="mt-2 text-sm text-white/55">{{ result.updated ? t('builder.updatedSub') : t('builder.resSub') }}</p>
 
       <!-- KOD -->
@@ -415,13 +363,7 @@
 
       <div class="mt-5 flex items-center justify-center gap-3 text-xs text-white/45">
         <div v-if="qrData" class="text-center">
-          <img
-            :src="qrData"
-            alt="QR kod"
-            width="96"
-            height="96"
-            class="rounded-lg bg-white p-1"
-          />
+          <img :src="qrData" alt="QR kod" width="96" height="96" class="rounded-lg bg-white p-1" />
           <p class="mt-1.5 text-[10px] text-white/40">{{ t('builder.qrCap') }}</p>
           <button class="chip !py-1 !px-2.5 !text-[10px] mt-1.5" type="button" @click="downloadQr">
             {{ flash === 'qr' ? t('builder.qrDlDone') : t('builder.qrDl') }}
@@ -632,9 +574,19 @@ const qrData = ref('') // mahalliy QR — aynan shu taklifnoma havolasidan
 const lastCode = ref('')
 let flashTimer = null
 
-/* Modal/to'liq ekran ochilganda orqadagi preview animatsiyalari to'xtaydi —
-   ikki joyda bir xil canvas ishlamaydi, telefon ham qizimaydi. */
-const previewPaused = computed(() => showFullscreen.value || !!result.value)
+/* Preview pauza: modal/to'liq ekran ochiq, preview ekrandan chiqib ketgan
+   (mobilda skroll) yoki tab yashirin bo'lsa — animatsiyalar to'xtaydi.
+   Ko'rinib turganda hamma effekt jonli ishlaydi. */
+const previewBox = ref(null)
+const previewVisible = ref(true)
+const docHidden = ref(false)
+let io = null
+const onVis = () => {
+  docHidden.value = document.hidden
+}
+const previewPaused = computed(
+  () => showFullscreen.value || !!result.value || !previewVisible.value || docHidden.value,
+)
 
 function applyQuick(days) {
   const d = new Date()
@@ -648,9 +600,7 @@ function isoFromDate(dateStr, timeStr) {
   return Number.isNaN(d.getTime()) ? null : d.toISOString()
 }
 
-/* Preview uchun hozirgi forma holati. Har bir tugma bosishida butun sahna
-   qayta render bo'lmasligi uchun 180ms debounce qilamiz — yozayotganda
-   animatsiyalar qayta-qayta boshlanmaydi va telefon qotmaydi. */
+/* Preview uchun hozirgi forma holati. */
 function buildDraft() {
   return {
     code: 'PREVIEW',
@@ -676,18 +626,41 @@ function buildDraft() {
 
 const draft = shallowRef(buildDraft())
 let draftTimer = null
+
+function pushDraft() {
+  const next = buildDraft()
+  // Bir xil holat qayta render qilmasin
+  if (JSON.stringify(next) !== JSON.stringify(draft.value)) draft.value = next
+}
+
+/* Matn maydonlari: yozish tugagach (450ms) — yozayotganda sahna qayta chizilmaydi */
 watch(
-  form,
+  () => [form.first_name, form.last_name, form.to_name, form.from_name, form.place, form.texts.join('\u0001')],
   () => {
     clearTimeout(draftTimer)
-    draftTimer = setTimeout(() => {
-      // Bir xil holat qayta render qilmasin. 500ms: yozish paytida sahna
-      // qayta-qayta chizilmaydi, preview esa baribir "darhol" yangilanadi.
-      const next = buildDraft()
-      if (JSON.stringify(next) !== JSON.stringify(draft.value)) draft.value = next
-    }, 500)
+    draftTimer = setTimeout(pushDraft, 450)
   },
-  { deep: true },
+)
+
+/* Diskret tanlovlar (tema, effekt, shrift, sana...): preview darhol yangilanadi */
+watch(
+  () => [
+    form.category,
+    form.theme,
+    form.date,
+    form.time,
+    form.text_anim,
+    form.card_anim,
+    form.ambient_effects.join(),
+    form.particle_effects.join(),
+    JSON.stringify(form.fonts),
+    form.place_lat,
+    form.place_lng,
+  ],
+  () => {
+    clearTimeout(draftTimer)
+    pushDraft()
+  },
 )
 
 /* Matnlar soni o'zgarsa — shriftlar ro'yxati ham mos bo'lsin */
@@ -970,6 +943,12 @@ onMounted(async () => {
   // Render bepul tarifi uxlab qolishi mumkin — forma to'ldirilayotganda
   // backendni oldindan uyg'otamiz, submit kutmaydi.
   warmUp()
+  // Preview ko'rinishdan chiqsa animatsiyalar to'xtaydi, qaytsa davom etadi
+  if (previewBox.value && 'IntersectionObserver' in window) {
+    io = new IntersectionObserver(([e]) => (previewVisible.value = e.isIntersecting), { threshold: 0.05 })
+    io.observe(previewBox.value)
+  }
+  document.addEventListener('visibilitychange', onVis)
   // Sahnani birinchi chizishdan keyin mount qilamiz — forma darhol javob beradi
   if (typeof requestIdleCallback === 'function') requestIdleCallback(showPreview, { timeout: 400 })
   else setTimeout(showPreview, 120)
@@ -993,6 +972,8 @@ watch(
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKey)
+  document.removeEventListener('visibilitychange', onVis)
+  io?.disconnect()
   clearTimeout(flashTimer)
   clearTimeout(noteTimer)
   clearTimeout(draftTimer)
@@ -1008,17 +989,20 @@ onBeforeUnmount(() => {
   background-size: 220% 100%;
   animation: mapShimmer 1.4s linear infinite;
 }
+
 @keyframes mapShimmer {
   to {
     background-position: -120% 0;
   }
 }
+
 .stage-skeleton {
   position: absolute;
   inset: 0;
   border-radius: inherit;
   background: linear-gradient(150deg, rgba(167, 139, 250, 0.22), rgba(14, 12, 24, 0.95));
 }
+
 .map-open {
   display: grid;
   place-items: center;
@@ -1030,10 +1014,12 @@ onBeforeUnmount(() => {
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s;
 }
+
 .map-open:hover {
   color: #fff;
   border-color: rgba(167, 139, 250, 0.5);
 }
+
 @media (prefers-reduced-motion: reduce) {
   .map-skeleton {
     animation: none;

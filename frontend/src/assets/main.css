@@ -43,14 +43,22 @@ body {
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  /* Bir xil fon butun sahifa bo'ylab (scroll paytida ham uzilish ko'rinmaydi) */
   background-color: #0a0912;
+}
+/* Fixed fon alohida kompozit qatlamda: skrollda qayta chizilmaydi
+   (background-attachment: fixed o'rniga). */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  transform: translateZ(0);
   background-image:
     radial-gradient(90% 60% at 15% -5%, rgba(139, 92, 246, 0.22), transparent 60%),
     radial-gradient(80% 55% at 95% 10%, rgba(245, 196, 81, 0.12), transparent 55%),
     radial-gradient(100% 70% at 50% 110%, rgba(232, 121, 249, 0.16), transparent 60%),
     linear-gradient(180deg, #0a0912 0%, #0d0b1a 50%, #0a0912 100%);
-  background-attachment: fixed;
   background-repeat: no-repeat;
   background-size: cover;
 }
@@ -87,11 +95,11 @@ body {
   color: transparent;
 }
 
+/* backdrop-filter olib tashlandi: orqada animatsiyalangan fon bor,
+   blur har kadrda qayta hisoblanardi. To'q fonda farq deyarli sezilmaydi. */
 .glass {
   background: linear-gradient(165deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
   border: 1px solid rgba(255, 255, 255, 0.09);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     0 30px 60px -40px rgba(0, 0, 0, 0.9);
@@ -109,7 +117,13 @@ body {
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(140deg, rgba(167, 139, 250, 0.55), transparent 35%, transparent 65%, rgba(245, 196, 81, 0.4));
+  background: linear-gradient(
+    140deg,
+    rgba(167, 139, 250, 0.55),
+    transparent 35%,
+    transparent 65%,
+    rgba(245, 196, 81, 0.4)
+  );
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -275,8 +289,6 @@ input[type="time"].field {
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
-  /* Blur + mask qatlami o'z kompozit qatlamida tursin: aks holda brauzer
-     ularni har skroll kadrida qaytadan rasterlaydi (1-1.5s qotish). */
   transform: translateZ(0);
   contain: strict;
   backface-visibility: hidden;
@@ -284,8 +296,6 @@ input[type="time"].field {
 .page-bg .orb {
   position: absolute;
   border-radius: 50%;
-  /* blur(70px) o'rniga yumshoq radial gradient: ko'rinishi deyarli bir xil,
-     lekin animatsiya paytida filtr har kadrda qayta hisoblanmaydi. */
   opacity: 0.6;
   animation: orbFloat 16s ease-in-out infinite alternate;
   will-change: transform;
@@ -321,13 +331,21 @@ input[type="time"].field {
   background-size: 26px 26px;
   mask-image: radial-gradient(80% 70% at 50% 40%, #000, transparent 85%);
 }
+/* Ixtiyoriy: orblarni to'xtatish uchun (.page-bg ga qo'shiladi) */
+.page-bg.bg-still .orb {
+  animation: none;
+}
+
+/* Preview qutisi: ichidagi animatsiyalar tashqariga repaint tarqatmaydi */
+.preview-box {
+  contain: layout paint style;
+  isolation: isolate;
+  transform: translateZ(0);
+}
 
 /* ==========================================================================
    Invitation stage (fullscreen, no scroll — everything sized in cq units)
    ========================================================================== */
-/* Ostidagi taklifnoma "pauza"da: konvert animatsiyasi tugaguncha uning
-   o'z animatsiyalari boshlanmaydi. Qayta mount qilishdan ko'ra ancha arzon
-   (Vue daraxti qayta qurilmaydi, faqat animatsiya soati to'xtaydi). */
 .stage-hold,
 .stage-hold *,
 .stage-hold *::before,
@@ -486,6 +504,7 @@ input[type="time"].field {
 .st-place-btn:hover {
   color: #fff;
 }
+/* backdrop-filter olib tashlandi (fon baribir 0.82 qoraytirilgan) */
 .route-overlay {
   position: fixed;
   inset: 0;
@@ -493,8 +512,7 @@ input[type="time"].field {
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgba(0, 0, 0, 0.82);
-  backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, 0.86);
   overflow-y: auto;
 }
 .route-panel {
@@ -523,9 +541,6 @@ input[type="time"].field {
   min-width: min(15cqw, 96px);
   padding: min(1.3cqh, 12px) min(2.2cqw, 16px);
   border-radius: min(2cqw, 16px);
-  /* backdrop-filter olib tashlandi: u har kadrda orqadagi animatsiyalangan
-     canvas/fonni qayta blur qilardi — taymer esa har soniya yangilanadi.
-     Ko'rinish deyarli bir xil, telefondа sezilarli tezlik oshadi. */
   background: linear-gradient(165deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.07));
   border: 1px solid color-mix(in srgb, var(--accent, #f5c451) 45%, transparent);
   box-shadow:
@@ -575,22 +590,32 @@ input[type="time"].field {
 
 /* ==========================================================================
    Ambient ( фон ) effects — multi-selectable, CSS driven
+   Hech qaysida filter: blur yo'q — yumshoqlik gradient stoplaridan keladi.
    ========================================================================== */
 .amb {
   position: absolute;
   inset: 0;
   z-index: 2;
   pointer-events: none;
-  /* Har bir fon qatlami o'z bo'yash maydonida qoladi — qayta hisoblash kamayadi */
   contain: layout paint style;
 }
+/* Animatsiyalangan qatlamlar GPU'da alohida turadi */
+.amb-orbs::before,
+.amb-orbs::after,
+.amb-aurora,
+.amb-waves,
+.amb-spotlight,
+.amb-bokeh,
+.amb-rays,
+.amb-smoke {
+  will-change: transform;
+}
+
 .amb-orbs::before,
 .amb-orbs::after {
   content: "";
   position: absolute;
   border-radius: 50%;
-  /* radial-gradient o'zi yumshoq — katta blur shart emas (mobil GPU tejaydi) */
-  filter: blur(34px);
   opacity: 0.45;
   background: radial-gradient(circle, var(--accent, #f5c451), transparent 70%);
 }
@@ -612,10 +637,10 @@ input[type="time"].field {
 
 .amb-aurora {
   background:
-    conic-gradient(from 160deg at 25% 15%, color-mix(in srgb, var(--accent, #f5c451) 40%, transparent), transparent 42%),
-    conic-gradient(from 20deg at 80% 75%, color-mix(in srgb, var(--accent2, #e879f9) 32%, transparent), transparent 46%);
-  filter: blur(55px);
-  opacity: 0.55;
+    radial-gradient(60% 55% at 28% 22%, color-mix(in srgb, var(--accent, #f5c451) 42%, transparent), transparent 70%),
+    radial-gradient(55% 50% at 78% 76%, color-mix(in srgb, var(--accent2, #e879f9) 34%, transparent), transparent 70%),
+    radial-gradient(40% 35% at 62% 38%, color-mix(in srgb, var(--accent, #f5c451) 18%, transparent), transparent 70%);
+  opacity: 0.6;
   animation: auroraMove 15s ease-in-out infinite alternate;
 }
 
@@ -625,7 +650,6 @@ input[type="time"].field {
   background:
     radial-gradient(85% 120% at 22% 100%, color-mix(in srgb, var(--accent, #f5c451) 34%, transparent), transparent 62%),
     radial-gradient(75% 110% at 74% 100%, color-mix(in srgb, var(--accent2, #e879f9) 26%, transparent), transparent 60%);
-  filter: blur(16px);
   opacity: 0.6;
   animation: waveMove 8s ease-in-out infinite alternate;
 }
@@ -644,13 +668,12 @@ input[type="time"].field {
 
 .amb-bokeh {
   background:
-    radial-gradient(circle at 18% 30%, color-mix(in srgb, var(--accent, #f5c451) 55%, transparent) 0 3.5%, transparent 4.5%),
-    radial-gradient(circle at 72% 18%, color-mix(in srgb, #fff 45%, transparent) 0 2.5%, transparent 3.5%),
-    radial-gradient(circle at 84% 62%, color-mix(in srgb, var(--accent2, #e879f9) 50%, transparent) 0 4%, transparent 5.2%),
-    radial-gradient(circle at 32% 78%, color-mix(in srgb, var(--accent, #f5c451) 45%, transparent) 0 3%, transparent 4%),
-    radial-gradient(circle at 55% 45%, color-mix(in srgb, #fff 30%, transparent) 0 2%, transparent 3%),
-    radial-gradient(circle at 8% 68%, color-mix(in srgb, var(--accent2, #e879f9) 40%, transparent) 0 2.8%, transparent 3.9%);
-  filter: blur(6px);
+    radial-gradient(circle at 18% 30%, color-mix(in srgb, var(--accent, #f5c451) 55%, transparent) 0 1.8%, transparent 5%),
+    radial-gradient(circle at 72% 18%, color-mix(in srgb, #fff 45%, transparent) 0 1.2%, transparent 4%),
+    radial-gradient(circle at 84% 62%, color-mix(in srgb, var(--accent2, #e879f9) 50%, transparent) 0 2%, transparent 5.6%),
+    radial-gradient(circle at 32% 78%, color-mix(in srgb, var(--accent, #f5c451) 45%, transparent) 0 1.5%, transparent 4.5%),
+    radial-gradient(circle at 55% 45%, color-mix(in srgb, #fff 30%, transparent) 0 1%, transparent 3.5%),
+    radial-gradient(circle at 8% 68%, color-mix(in srgb, var(--accent2, #e879f9) 40%, transparent) 0 1.4%, transparent 4.4%);
   opacity: 0.7;
   animation: bokehFloat 17s ease-in-out infinite alternate;
 }
@@ -672,7 +695,6 @@ input[type="time"].field {
     radial-gradient(45% 35% at 30% 60%, rgba(255, 255, 255, 0.12), transparent 70%),
     radial-gradient(40% 32% at 70% 40%, color-mix(in srgb, var(--accent, #f5c451) 14%, transparent), transparent 70%),
     radial-gradient(50% 40% at 55% 85%, rgba(255, 255, 255, 0.08), transparent 70%);
-  filter: blur(18px);
   opacity: 0.75;
   animation: smokeDrift 20s ease-in-out infinite alternate;
 }
@@ -934,7 +956,9 @@ input[type="time"].field {
   }
   94% {
     transform: translate(-2px, 0);
-    text-shadow: 2px 0 rgba(255, 0, 90, 0.6), -2px 0 rgba(0, 220, 255, 0.6);
+    text-shadow:
+      2px 0 rgba(255, 0, 90, 0.6),
+      -2px 0 rgba(0, 220, 255, 0.6);
   }
 }
 @keyframes rainbowSlide {
@@ -979,8 +1003,7 @@ input[type="time"].field {
     transform: scale(1.15) rotate(90deg);
   }
 }
-/* Faqat translate + opacity: blur qilingan katta qatlamni masshtablash
-   har kadrda qayta rasterizatsiya qilardi (mobil GPU'da lag). */
+/* Faqat translate + opacity: kompozitorda bajariladi */
 @keyframes orbFloat {
   0% {
     transform: translate3d(0, 0, 0);
@@ -1138,24 +1161,22 @@ input[type="time"].field {
 .env-scene {
   display: inline-block;
   position: relative;
-  /* Suzish 2D tarjima: 3D daraxt qayta rasterizatsiya bo'lmaydi */
   animation: envFloat 5.2s ease-in-out infinite;
 }
 .env-scene.scene-open {
   animation: none; /* ochilishda kompozitorni bo'shatamiz */
 }
-/* yumshoq zamin soyasi — konvert joyida turadi */
+/* yumshoq zamin soyasi — gradientning o'zi yumshoq, blur kerak emas */
 .env-scene::after {
-  content: '';
+  content: "";
   position: absolute;
   z-index: -1;
-  left: 5%;
-  right: 5%;
-  bottom: -30px;
-  height: 24px;
+  left: 2%;
+  right: 2%;
+  bottom: -32px;
+  height: 30px;
   border-radius: 50%;
   background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6), transparent 72%);
-  filter: blur(6px);
 }
 .env-scene.scene-open::after {
   animation: envPartOut 0.5s ease 2.5s forwards;
@@ -1180,7 +1201,7 @@ input[type="time"].field {
 }
 /* qog'oz qalinligi (chet) */
 .env::before {
-  content: '';
+  content: "";
   position: absolute;
   z-index: 0;
   inset: -2px -2px -3px -2px;
@@ -1210,7 +1231,12 @@ input[type="time"].field {
   inset: 0;
   z-index: 0;
   border-radius: 12px;
-  background: linear-gradient(180deg, rgba(52, 36, 12, 0.92) 0%, rgba(96, 74, 36, 0.7) 60%, rgba(150, 126, 78, 0.45) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(52, 36, 12, 0.92) 0%,
+    rgba(96, 74, 36, 0.7) 60%,
+    rgba(150, 126, 78, 0.45) 100%
+  );
   clip-path: polygon(0 0, 100% 0, 50% 46%);
   box-shadow: inset 0 12px 18px rgba(30, 20, 4, 0.6);
 }
@@ -1233,7 +1259,7 @@ input[type="time"].field {
 }
 /* ichki hoshiya — taklifnoma kartasi ko'rinishi */
 .env-letter::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 6px;
   border: 1px solid rgba(160, 130, 60, 0.4);
@@ -1301,7 +1327,7 @@ input[type="time"].field {
 /* konvert echaklari (seam lines) */
 .env-pocket::before,
 .env-pocket::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   width: 82%;
@@ -1367,12 +1393,10 @@ input[type="time"].field {
 
 /* --- Ochilish animatsiyasi: bosqichli, sekin va ko'rinadigan ---
    t=0.00 mum yoriladi  →  t=0.60 qopqoq 3D ochiladi  →  t=1.50 qog'oz chiqadi
-   →  t=2.25 tekis qog'oz ekranni to'ldiradi  →  t=3.15 pardaz yo'qoladi (3.65da tugaydi)
+   →  t=2.25 tekis qog'oz ekranni to'ldiradi  →  t=3.15 parda yo'qoladi (3.65da tugaydi)
 
    OPTIMIZATSIYA QOIDASI: bu blokdagi barcha keyframe'lar FAQAT
-   transform/opacity o'zgartiradi. background, z-index, filter (drop-shadow)
-   kabi xossalarni animatsiya qilish har kadrda repaint/rasterizatsiya
-   chaqiradi — ilgari shu sabab ochilishda qotardi. */
+   transform/opacity o'zgartiradi. */
 @keyframes sealBreak {
   0% {
     transform: translate(-50%, -50%) rotate(-5deg) scale(1);
@@ -1391,8 +1415,6 @@ input[type="time"].field {
   animation: sealBreak 0.6s cubic-bezier(0.34, 1.15, 0.64, 1) forwards;
   will-change: transform, opacity;
 }
-/* Qopqoq: faqat rotateX. Fon gradienti va z-index endi o'zgarmaydi
-   (flap 180° dan keyin konvert ustida turadi — z-index shart emas). */
 @keyframes flapOpen {
   from {
     transform: rotateX(0deg);
@@ -1417,7 +1439,6 @@ input[type="time"].field {
     transform: translateY(-76%) rotate(1.6deg);
   }
 }
-/* Qog'oz "yo'qoladi": katta masshtabda bezakli element qolmasin */
 @keyframes letterFade {
   to {
     opacity: 0;
@@ -1438,7 +1459,6 @@ input[type="time"].field {
 .env.open .env-letter-txt {
   animation: txtOut 0.35s ease 2.1s forwards;
 }
-/* Tekis qog'oz: ism/sana yozuvi yo'q — kattalashganda deyarli bepul */
 @keyframes paperIn {
   from {
     opacity: 0;
@@ -1447,16 +1467,14 @@ input[type="time"].field {
     opacity: 1;
   }
 }
-/* YAkuniy holat: qog'oz markazi EKRAN markaziga suriladi va o'shandan
-   kattalashadi — shu sabab ekran qanday bo'lsa ham to'liq qoplanadi.
-   --paper-dx/dy/scale qiymatlarini JS o'lchab beradi. */
+/* Yakuniy holat: qog'oz markazi EKRAN markaziga suriladi va o'shandan
+   kattalashadi. --paper-dx/dy/scale qiymatlarini JS o'lchab beradi. */
 @keyframes paperZoom {
   from {
     transform: translateY(-76%) scale(1);
   }
   to {
-    transform: translate(var(--paper-dx, 0px), var(--paper-dy, 0px))
-      scale(var(--paper-scale, 9));
+    transform: translate(var(--paper-dx, 0px), var(--paper-dy, 0px)) scale(var(--paper-scale, 9));
   }
 }
 .env.open .env-paper {
@@ -1477,9 +1495,8 @@ input[type="time"].field {
   animation: envPartOut 0.55s ease 2.3s forwards;
 }
 
-/* Butun pardaz: qog'oz ekranni to'ldirgach yo'qolib, taklifnoma ochiladi.
-   Faqat opacity — masshtablash katta blur qatlamlarni qayta rasterizatsiya
-   qilib, animatsiya oxirida qotishga sabab bo'lardi. */
+/* Butun parda: qog'oz ekranni to'ldirgach yo'qolib, taklifnoma ochiladi.
+   Faqat opacity. */
 @keyframes coverOut {
   0%,
   88% {
@@ -1494,7 +1511,7 @@ input[type="time"].field {
   pointer-events: none;
   will-change: opacity;
 }
-/* Konvert animatsiyasi paytida pardazdagi doimiy orblar to'xtaydi */
+/* Konvert animatsiyasi paytida pardadagi doimiy orblar to'xtaydi */
 .cover-out .page-bg .orb {
   animation-play-state: paused;
 }
@@ -1508,35 +1525,8 @@ input[type="time"].field {
   transition-delay: 0.8s;
 }
 
-/* Mobil: katta blur radiuslari va backdrop-filter qimmat — yengilroq rejim */
-@media (max-width: 768px) {
-  .glass {
-    background: linear-gradient(165deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-  .page-bg .orb {
-    filter: blur(46px);
-  }
-  .amb-aurora {
-    filter: blur(30px);
-  }
-  .amb-waves {
-    filter: blur(12px);
-  }
-  .amb-bokeh {
-    filter: blur(3px);
-  }
-  .amb-smoke {
-    filter: blur(14px);
-  }
-  .amb-orbs::before,
-  .amb-orbs::after {
-    filter: blur(26px);
-  }
-}
-
-/* Kichik telefonlar: matn soyasi va eng og'ir fon qatlamlarini yengillashtirish */
+/* Kichik telefonlar: matn soyasi va eng og'ir fon qatlamlarini yengillashtirish.
+   (768px blokidagi barcha blur qoidalari olib tashlandi — endi blur umuman yo'q.) */
 @media (max-width: 480px) {
   .st-names {
     text-shadow:
