@@ -1,8 +1,13 @@
 <template>
-  <div class="builder-bg" aria-hidden="true"></div>
+  <div class="page-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="grain"></div>
+  </div>
 
   <!-- Header -->
-  <header class="sticky top-0 z-40 rounded-b-2xl border-b border-white/[0.06] bg-ink">
+  <header class="sticky top-0 z-40 rounded-b-2xl border-b border-white/[0.06] bg-ink/70 backdrop-blur-xl">
     <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
       <RouterLink to="/" class="flex items-center gap-2.5">
         <AppIcon name="ph:envelope-simple" size="1.7rem" class="text-accent" />
@@ -330,7 +335,7 @@
 
       <!-- ============================ PREVIEW ============================ -->
       <aside class="order-1 min-w-0 self-start lg:sticky lg:top-24 lg:order-2">
-        <div class="glass card preview-card p-4">
+        <div class="glass card p-4">
           <div class="mb-3 flex items-center justify-between gap-3">
             <span class="lbl !mb-0">{{ t('builder.live') }}</span>
             <button class="chip !py-1.5 !text-xs" type="button" @click="showFullscreen = true">
@@ -1013,36 +1018,6 @@ onBeforeUnmount(() => {
   inset: 0;
   border-radius: inherit;
   background: linear-gradient(150deg, rgba(167, 139, 250, 0.22), rgba(14, 12, 24, 0.95));
-}
-/* Create sahifasi: bezak fon o'rniga bitta tekis rang. Skroll paytida
-   qayta chiziladigan blur/mask qatlamlari qolmaydi; taklifnoma
-   effektlari (canvas, ambient, zarracha) o'z joyida ishlaydi. */
-.builder-bg {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: #0a0912;
-  /* Skrollda qayta bo'yalmasi uchun alohida kompozit qatlam */
-  transform: translateZ(0);
-  contain: strict;
-  will-change: transform;
-  pointer-events: none;
-}
-.preview-card {
-  background: rgba(255, 255, 255, 0.045);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-/* Gradient-maskali hoshiya 7 kartada alohida qatlam talab qiladi —
-   oddiy 1px chegara bilan almashtirildi. */
-.card::after {
-  display: none;
-}
-.card {
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  /* Fon endi tekis rang — orqa fonni blur qilishning ma'nosi yo'q */
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
 }
 .map-open {
   display: grid;
