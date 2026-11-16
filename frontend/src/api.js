@@ -367,6 +367,30 @@ export async function fetchMyInvitations() {
   }
 }
 
+/**
+ * Taklifnoma o'chirilgach uning barcha lokal nusxalarini tozalaydi:
+ * xotiradagi kesh, `taklifnoma:inv:KOD` va ro'yxat keshlari. Busiz
+ * o'chirilgan karta sahifa qayta ochilganda keshdan qaytib chiqardi.
+ */
+export function forgetInvitation(code) {
+  const clean = normalizeCode(code)
+  if (!clean) return
+  cache.delete(clean)
+  try {
+    localStorage.removeItem(`taklifnoma:inv:${clean}`)
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i)
+      if (!key || !key.startsWith('taklifnoma:list:')) continue
+      const parsed = JSON.parse(localStorage.getItem(key) || 'null')
+      if (!parsed || !Array.isArray(parsed.items)) continue
+      const items = parsed.items.filter((x) => normalizeCode(x && x.code) !== clean)
+      localStorage.setItem(key, JSON.stringify({ ...parsed, items }))
+    }
+  } catch {
+    /* localStorage yopiq bo'lsa jim o'tamiz */
+  }
+}
+
 /** Taklifnomani o'chirish (faqat egasi). */
 export async function deleteInvitation(code, editKey = '') {
   const clean = normalizeCode(code)
@@ -385,12 +409,7 @@ export async function deleteInvitation(code, editKey = '') {
     throw networkError(e)
   }
   if (res.status === 204) {
-    cache.delete(clean)
-    try {
-      localStorage.removeItem(`taklifnoma:inv:${clean}`)
-    } catch {
-      /* ignore */
-    }
+    forgetInvitation(clean)
     return true
   }
   await parse(res)

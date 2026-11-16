@@ -222,7 +222,14 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { claimInvitation, copyText, deleteInvitation, fetchMyInvitations, shareUrl } from '../api.js'
+import {
+  claimInvitation,
+  copyText,
+  deleteInvitation,
+  fetchMyInvitations,
+  forgetInvitation,
+  shareUrl,
+} from '../api.js'
 import { auth, loadMe } from '../auth.js'
 import { listMine, removeMine } from '../data/mine.js'
 import { THEMES, fontStack, prettyCode } from '../data/catalog.js'
@@ -416,20 +423,27 @@ async function copyLink(inv) {
 
 async function remove(inv) {
   deleting.value = true
+  // Reaktiv: karta darhol yo'qoladi; server rad etsa — qaytariladi.
+  const snapshot = items.value
+  items.value = items.value.filter((x) => x.code !== inv.code)
+  closeSheet()
   try {
     await deleteInvitation(inv.code, inv.editKey || '')
-    if (inv.legacy) removeMine(inv.code)
-    leaving.value.add(inv.code)
-    setTimeout(() => {
-      items.value = items.value.filter((x) => x.code !== inv.code)
-      leaving.value.delete(inv.code)
-    }, 260)
-    closeSheet()
   } catch (e) {
-    deleteError.value = e?.message || t('envelopes.err')
-  } finally {
-    deleting.value = false
+    // 404 = serverda allaqachon yo'q, shuning uchun muvaffaqiyat deb qaraymiz
+    if (e?.status !== 404) {
+      items.value = snapshot
+      deleteError.value = e?.message || t('envelopes.err')
+      deleting.value = false
+      return
+    }
   }
+  // Server + barcha lokal keshlar tozalanadi (ro'yxat keshi, inv kesh, mine)
+  forgetInvitation(inv.code)
+  removeMine(inv.code)
+  writeListCache(items.value)
+  leaving.value.delete(inv.code)
+  deleting.value = false
 }
 
 function onKey(e) {

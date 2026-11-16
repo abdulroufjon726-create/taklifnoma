@@ -15,7 +15,6 @@ backend/staticfiles/
 # Logs & env
 *.log
 .env
-.vercel
 
 # Reklama/video materiallari (rejada emas, repoda saqlanmaydi)
 promo/
@@ -28,5 +27,4 @@ promo/
 
 # Chat/ekran materiallari va generatsiya chiqindilari
 frontend/.cloud-attachments/
-backend/staticfiles/
 
