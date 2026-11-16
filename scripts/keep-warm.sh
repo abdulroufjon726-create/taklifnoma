@@ -36,6 +36,6 @@ fi
 
 echo "keep-warm: $URL har ${INTERVAL}s ping qilinadi. To'xtatish: Ctrl+C"
 while true; do
-  ping_once || { sleep 20; ping_once || true; }
+  ping_once || { sleep 15; ping_once || true; }
   sleep "$INTERVAL"
 done
