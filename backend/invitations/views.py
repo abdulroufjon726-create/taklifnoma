@@ -4,6 +4,7 @@ import secrets
 from django.conf import settings
 from django.db import connection
 from django.db.models import F
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -12,7 +13,7 @@ from rest_framework.exceptions import NotFound
 
 from accounts.auth import user_from_request
 
-from .models import Invitation
+from .models import Invitation, KeepAlivePing
 from .serializers import InvitationCreateSerializer, InvitationSerializer
 
 logger = logging.getLogger(__name__)
@@ -59,6 +60,30 @@ def health(request):
             error=" ".join(str(exc).split())[:300],
         )
         return Response(body, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    # Keep-alive izi: pinger'lar `X-Keep-Warm: phone|windows|linux|github`
+    # yuboradi. Faqat shunday so'rovlar yoziladi — Render'ning o'z probe'i va
+    # brauzer so'rovlari yozuvni yangilamaydi, aks holda "oxirgi ping" yolg'on
+    # ko'rsatardi.
+    source = (request.headers.get("X-Keep-Warm") or "").strip().lower()[:32]
+    last = None
+    try:
+        if source:
+            KeepAlivePing.objects.update_or_create(source=source)
+        last = KeepAlivePing.objects.order_by("-seen_at").first()
+    except Exception:
+        logger.warning("keep-alive izini yozib bo'lmadi", exc_info=True)
+
+    now = timezone.now()
+    if last:
+        body["last_ping"] = {
+            "source": last.source,
+            "at": last.seen_at.isoformat(),
+            "age_seconds": int((now - last.seen_at).total_seconds()),
+        }
+    else:
+        body["last_ping"] = None
+    body["now"] = now.isoformat()
     return Response(body)
 
 

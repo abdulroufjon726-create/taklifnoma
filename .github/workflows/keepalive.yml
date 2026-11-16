@@ -30,7 +30,7 @@ jobs:
           code=""
           for attempt in 1 2 3; do
             start=$(date +%s)
-            code=$(curl -s -o /tmp/health.json -w "%{http_code}" --max-time 60 "$url" || true)
+            code=$(curl -s -H "X-Keep-Warm: github" -o /tmp/health.json -w "%{http_code}" --max-time 60 "$url" || true)
             took=$(( $(date +%s) - start ))
             echo "attempt $attempt -> HTTP $code in ${took}s $(cat /tmp/health.json 2>/dev/null)"
             if [ "$code" = "200" ]; then

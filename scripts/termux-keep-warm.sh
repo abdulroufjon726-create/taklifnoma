@@ -22,7 +22,7 @@ log() {
 ping_once() {
   local code took body
   took=$(date +%s)
-  body=$(curl -sS --max-time 45 -o "$TMPDIR/keep-warm.json" -w '%{http_code}' "$URL" 2>/dev/null) || body="000"
+  body=$(curl -sS -H 'X-Keep-Warm: phone' --max-time 45 -o "$TMPDIR/keep-warm.json" -w '%{http_code}' "$URL" 2>/dev/null) || body="000"
   code="$body"
   took=$(( $(date +%s) - took ))
   body=$(tr -d '\n' < "$TMPDIR/keep-warm.json" 2>/dev/null | cut -c1-80 || true)

@@ -193,7 +193,7 @@ CORS_ALLOWED_ORIGINS += _extra_origins
 # X-Edit-Key — taklifnomani parolsiz tahrirlash kaliti. Brauzer PATCH/DELETE
 # oldidan preflight yuboradi; bu sarlavha ruxsat etilmasa so'rov CORS'da
 # bloklanadi va foydalanuvchi "Serverga ulanib bo'lmadi" xatosini ko'radi.
-CORS_ALLOW_HEADERS = (*default_headers, "x-edit-key")
+CORS_ALLOW_HEADERS = (*default_headers, "x-edit-key", "x-keep-warm")
 CSRF_TRUSTED_ORIGINS = list(_extra_origins) + ["https://taklifnoma-1.onrender.com"]
 # Aniq domen kiritilmagan bo'lsa — hamma joyga ruxsat (ochiq API, kod orqali himoyalangan)
 CORS_ALLOW_ALL_ORIGINS = not _extra_origins

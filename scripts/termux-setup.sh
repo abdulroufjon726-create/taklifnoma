@@ -34,7 +34,7 @@ log() { printf '%s  %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >> "$LOG"; }
 ping_once() {
   local code took
   took=$(date +%s)
-  code=$(curl -sS --max-time 45 -o "$TMPDIR/keep-warm.json" -w '%{http_code}' "$URL" 2>/dev/null) || code="000"
+  code=$(curl -sS -H 'X-Keep-Warm: phone' --max-time 45 -o "$TMPDIR/keep-warm.json" -w '%{http_code}' "$URL" 2>/dev/null) || code="000"
   took=$(( $(date +%s) - took ))
   log "HTTP $code  ${took}s  $(tr -d '\n' < "$TMPDIR/keep-warm.json" 2>/dev/null | cut -c1-80)"
   [ "$code" = "200" ]

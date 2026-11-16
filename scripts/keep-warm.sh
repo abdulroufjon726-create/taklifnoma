@@ -21,7 +21,7 @@ LOG="${KEEP_WARM_LOG:-$(dirname "$0")/../keep-warm.log}"
 ping_once() {
   local code start took note
   start=$(date +%s)
-  note=$(curl -sS --max-time 45 -o /tmp/keep-warm.json -w '%{http_code}' "$URL" 2>/dev/null || echo 000)
+  note=$(curl -sS -H 'X-Keep-Warm: linux' --max-time 45 -o /tmp/keep-warm.json -w '%{http_code}' "$URL" 2>/dev/null || echo 000)
   code="$note"
   took=$(( $(date +%s) - start ))
   note=$(tr -d '\n' < /tmp/keep-warm.json 2>/dev/null | cut -c1-90 || true)

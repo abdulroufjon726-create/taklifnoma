@@ -41,7 +41,7 @@ goto loop
 
 :ping
 set "CODE="
-for /f "delims=" %%C in ('curl -s -o "%TEMP%\keep-warm.json" -w "%%{http_code}" --max-time 45 "%URL%" 2^>nul') do set "CODE=%%C"
+for /f "delims=" %%C in ('curl -s -H "X-Keep-Warm: windows" -o "%TEMP%\keep-warm.json" -w "%%{http_code}" --max-time 45 "%URL%" 2^>nul') do set "CODE=%%C"
 if "!CODE!"=="" set "CODE=000"
 echo %DATE% %TIME%  HTTP !CODE!  >> "%LOG%"
 echo %DATE% %TIME%  HTTP !CODE!

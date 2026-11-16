@@ -91,3 +91,21 @@ class Invitation(models.Model):
         if not self.code:
             self.code = generate_code()
         super().save(*args, **kwargs)
+
+
+class KeepAlivePing(models.Model):
+    """Oxirgi keep-alive ping izi.
+
+    `scripts/keep-warm.*` va GitHub workflow `X-Keep-Warm` sarlavhasi bilan
+    /api/health/ ga murojaat qiladi; javobda shu yozuvning vaqti qaytadi, shu
+    bilan telefon cron'i ishlayaptimi-yu yo'qmi telefondan turib bilish mumkin.
+    """
+
+    source = models.CharField(max_length=32, unique=True)
+    seen_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-seen_at"]
+
+    def __str__(self) -> str:
+        return f"{self.source} @ {self.seen_at:%Y-%m-%d %H:%M:%S}"
