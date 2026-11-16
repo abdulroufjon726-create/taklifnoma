@@ -1,16 +1,13 @@
 name: keep-alive
 
-# Render bepul instansiyasi 15 daqiqa harakatsizlikdan keyin uxlaydi va keyingi
-# birinchi so'rov 30-50 soniya kutadi. /api/health/ bazaga SELECT 1 yuboradi,
-# shuning uchun u instansiya bilan birga Postgres ulanishini ham uyg'oq tutadi
-# (Django tomonida CONN_MAX_AGE=600 — ulanish qayta ishlatiladi, har so'rovda
-# Tailscale orqali yangi ulanish ochilmaydi).
+# Render bepul instansiyasi 15 daqiqa harakatsizlikdan keyin uxlaydi. Bu job
+# /api/health/ ga ping yuboradi — u bazaga SELECT 1 qiladi, shuning uchun
+# instansiya bilan birga Postgres ulanishi ham uyg'oq qoladi.
 #
-# MUHIM: GitHub rejadagi cron 10 daqiqada bir marta emas, amalda 4-6 soatda bir
-# marta ishga tushadi (bepul runner'lar kechiktiriladi). Shuning uchun har bir
-# ishga tushish 12 daqiqa davomida har daqiqada ping yuboradi: bitta run butun
-# uxlash oynasini yopadi. Bu 100% kafolat emas — Render Starter rejasi yoki
-# 24/7 ishlaydigan tashqi pinger bu muammoni butunlay yopadi.
+# Bu yerga uzoq "warm" sikli qo'yilmaydi: GitHub cron baribir 4-6 soatga
+# kechikadi va uzoq runlar navbatda qolib, keyingi pinglarni bloklaydi.
+# To'liq 24/7 uyg'oq ushlash uchun scripts/keep-warm.ps1 yoki
+# scripts/keep-warm.sh (doimiy ishlaydigan mashinada) ishlatiladi.
 
 on:
   schedule:
@@ -25,35 +22,23 @@ concurrency:
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     steps:
       - name: Wake the backend and its database
         run: |
           url="https://taklifnoma-1.onrender.com/api/health/"
+          code=""
           for attempt in 1 2 3; do
             start=$(date +%s)
             code=$(curl -s -o /tmp/health.json -w "%{http_code}" --max-time 60 "$url" || true)
             took=$(( $(date +%s) - start ))
             echo "attempt $attempt -> HTTP $code in ${took}s $(cat /tmp/health.json 2>/dev/null)"
             if [ "$code" = "200" ]; then
-              break
+              exit 0
             fi
             sleep 10
           done
-          if [ "$code" != "200" ]; then
-            echo "::warning::health check did not return 200 - Render cold start, database offline or outage"
-          fi
-
-      - name: Stay warm for the sleep window
-        run: |
-          # Render 15 daqiqadan keyin uxlaydi: 12 daqiqa davomida har daqiqada
-          # ping yuboramiz, shunda keyingi cron kechiksa ham instansiya uyg'oq.
-          url="https://taklifnoma-1.onrender.com/api/health/"
-          for i in $(seq 1 12); do
-            sleep 60
-            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 45 "$url" || true)
-            echo "warm $i/12 -> HTTP $code"
-          done
+          echo "::warning::health check did not return 200 - Render cold start, database offline or outage"
 
       - name: Warm the frontend
         run: |
