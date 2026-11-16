@@ -15,3 +15,18 @@ backend/staticfiles/
 # Logs & env
 *.log
 .env
+.vercel
+
+# Reklama/video materiallari (rejada emas, repoda saqlanmaydi)
+promo/
+*.mp4
+*.webm
+*.mov
+*.mp3
+*.wav
+*.m4a
+
+# Chat/ekran materiallari va generatsiya chiqindilari
+frontend/.cloud-attachments/
+backend/staticfiles/
+

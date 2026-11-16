@@ -981,19 +981,14 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* Xarita yopiq turganda: statik fon. Ilgari bu yerda cheksiz mapShimmer
+   bor edi — background-position animatsiyasi 258px gradientni har kadrda
+   qayta bo'yab, xarita ochilguncha sahifani qotib qolishga majbur qilardi. */
 .map-skeleton {
   height: 258px;
   border-radius: 0.9rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(100deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
-  background-size: 220% 100%;
-  animation: mapShimmer 1.4s linear infinite;
-}
-
-@keyframes mapShimmer {
-  to {
-    background-position: -120% 0;
-  }
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.075));
 }
 
 .stage-skeleton {
@@ -1020,9 +1015,4 @@ onBeforeUnmount(() => {
   border-color: rgba(167, 139, 250, 0.5);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .map-skeleton {
-    animation: none;
-  }
-}
 </style>
