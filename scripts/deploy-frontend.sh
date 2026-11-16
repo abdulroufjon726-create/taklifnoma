@@ -10,8 +10,8 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-if [ ! -f frontend/package.json ] || [ ! -f vercel.json ]; then
-  echo "xato: repo ildizida emas (frontend/ yoki vercel.json topilmadi)" >&2
+if [ ! -f frontend/package.json ] || [ ! -f backend/manage.py ]; then
+  echo "xato: repo ildizida emas (frontend/package.json yoki backend/manage.py topilmadi)" >&2
   exit 1
 fi
 
