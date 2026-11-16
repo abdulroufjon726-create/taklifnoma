@@ -66,23 +66,35 @@ def health(request):
     # brauzer so'rovlari yozuvni yangilamaydi, aks holda "oxirgi ping" yolg'on
     # ko'rsatardi.
     source = (request.headers.get("X-Keep-Warm") or "").strip().lower()[:32]
-    last = None
+    sources = {}
     try:
         if source:
             KeepAlivePing.objects.update_or_create(source=source)
-        last = KeepAlivePing.objects.order_by("-seen_at").first()
+        rows = KeepAlivePing.objects.all()[:10]
+        now = timezone.now()
+        for row in rows:
+            sources[row.source] = {
+                "at": row.seen_at.isoformat(),
+                "age_seconds": int((now - row.seen_at).total_seconds()),
+            }
+        last = max(rows, key=lambda r: r.seen_at, default=None)
     except Exception:
         logger.warning("keep-alive izini yozib bo'lmadi", exc_info=True)
+        now = timezone.now()
+        last = None
 
-    now = timezone.now()
-    if last:
-        body["last_ping"] = {
+    # Har bir manba alohida: GitHub pinger'i eng yangi bo'lsa ham telefon
+    # holatini `.keep_warm.phone.age_seconds` dan o'qish mumkin.
+    body["keep_warm"] = sources
+    body["last_ping"] = (
+        {
             "source": last.source,
             "at": last.seen_at.isoformat(),
-            "age_seconds": int((now - last.seen_at).total_seconds()),
+            "age_seconds": sources[last.source]["age_seconds"],
         }
-    else:
-        body["last_ping"] = None
+        if last
+        else None
+    )
     body["now"] = now.isoformat()
     return Response(body)
 
