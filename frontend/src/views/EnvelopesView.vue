@@ -358,12 +358,20 @@ async function load() {
     // Kaliti borlarini hisobga avtomatik bog'laymiz.
     // 409 = boshqa hisobga tegishli -> bu ro'yxatda ko'rsatilmaydi.
     const foreign = new Set()
+    const gone = new Set()
     await Promise.all(
       pending.map(async (e) => {
         try {
           await claimInvitation(e.code, e.editKey)
         } catch (err) {
-          if (err && err.status === 409) foreign.add(e.code)
+          if (err && err.status === 409) {
+            foreign.add(e.code)
+          } else if (err && err.status === 404) {
+            // Serverda bunday taklifnoma yo'q (o'chirilgan) — lokal yozuv eskirgan,
+            // aks holda karta ro'yxatda "arvoh" bo'lib qolib ketadi.
+            gone.add(e.code)
+            removeMine(e.code)
+          }
           /* qolgan holatlarda pastda lokal karta sifatida ko'rsatamiz */
         }
       }),
@@ -380,7 +388,7 @@ async function load() {
 
     const after = new Set(merged.map((i) => i.code))
     const extras = pending
-      .filter((e) => !after.has(e.code) && !foreign.has(e.code))
+      .filter((e) => !after.has(e.code) && !foreign.has(e.code) && !gone.has(e.code))
       .map(legacyToInvitation)
     items.value = [...merged, ...extras]
     writeListCache(items.value)
