@@ -121,8 +121,11 @@ if DATABASE_URL.startswith(("postgres://", "postgresql://")):
         "PASSWORD": unquote(_db.password or ""),
         "HOST": _db.hostname or "",
         "PORT": str(_db.port or 5432),
-        # Ulanishni 60 soniya qayta ishlatish (Tailscale orqali har ulanish ~0.6s).
-        "CONN_MAX_AGE": 60,
+        # Ulanishni 10 daqiqa ochiq ushlaymiz: Tailscale orqali har yangi
+        # ulanish ~0.6s turadi, keep-alive ping'lar orasida baza uyg'oq bo'lsa
+        # so'rovlar shu tayyor ulanishdan ketadi. CONN_HEALTH_CHECKS eskirgan
+        # ulanishni so'rov oldidan tashlab yuboradi, shuning uchun 500 bo'lmaydi.
+        "CONN_MAX_AGE": 600,
         # Telefon/Tailscale uzilib qolsa, eskirgan ulanish 500 xato bermasligi
         # uchun har so'rov oldidan ulanish tirikligi tekshiriladi (Django 4.1+).
         "CONN_HEALTH_CHECKS": True,

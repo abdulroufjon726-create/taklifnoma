@@ -23,6 +23,14 @@
       </div>
     </header>
 
+    <p v-if="deleteError" class="inline-error" role="alert">
+      <AppIcon name="ph:warning-circle" size="1.1em" />
+      <span>{{ deleteError }}</span>
+      <button type="button" class="inline-error-x" :aria-label="t('account.cancel')" @click="deleteError = ''">
+        ✕
+      </button>
+    </p>
+
     <div v-if="loading" class="grid-cards">
       <div v-for="n in 3" :key="n" class="skeleton"></div>
     </div>
@@ -431,6 +439,7 @@ async function copyLink(inv) {
 
 async function remove(inv) {
   deleting.value = true
+  deleteError.value = ''
   // Reaktiv: karta darhol yo'qoladi; server rad etsa — qaytariladi.
   const snapshot = items.value
   items.value = items.value.filter((x) => x.code !== inv.code)
@@ -759,6 +768,37 @@ watch(locale, () => {
     background-position: -120% 0;
   }
 }
+/* O'chirish muvaffaqiyatsiz bo'lganda (masalan internet uzilganda) karta
+   joyiga qaytadi va foydalanuvchi nega qaytganini shu yerda ko'radi. */
+.inline-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.8rem;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  background: rgba(248, 113, 113, 0.12);
+  color: #fecaca;
+  font-size: 0.85rem;
+}
+.inline-error span {
+  flex: 1;
+  min-width: 0;
+}
+.inline-error-x {
+  border: 0;
+  background: none;
+  color: inherit;
+  opacity: 0.7;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.2rem;
+}
+.inline-error-x:hover {
+  opacity: 1;
+}
+
 .state-card {
   display: grid;
   place-items: center;
