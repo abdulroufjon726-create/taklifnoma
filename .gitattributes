@@ -1,3 +1,5 @@
 # Shell skriptlar Linux/CI da CRLF bilan ishlamaydi
 *.sh text eol=lf
 *.yml text eol=lf
+# Windows batch fayllari CRLF talab qiladi
+*.cmd text eol=crlf
