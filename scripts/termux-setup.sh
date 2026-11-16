@@ -9,7 +9,8 @@
 #   2) ~/keep-warm.sh yozadi (pinger)
 #   3) crontab'ga "*/5 * * * *" qo'shadi (takrorlanmaydi)
 #   4) crond'ni termux-services orqali yoqadi
-#   5) bir marta sinov ping yuboradi
+#   5) Termux:Boot uchun avtomatik start skriptini yozadi
+#   6) bir marta sinov ping yuboradi
 set -uo pipefail
 
 HOME_DIR="${HOME:-/data/data/com.termux/files/home}"
@@ -60,7 +61,21 @@ sv up crond 2>/dev/null || true
 sleep 1
 sv status crond 2>/dev/null || echo "ogohlantirish: crond holatini o'qib bo'lmadi"
 
-echo "== 5/5 sinov ping =="
+echo "== 5/6 qayta yuklashda avtomatik start (Termux:Boot) =="
+mkdir -p "$HOME_DIR/.termux/boot"
+cat > "$HOME_DIR/.termux/boot/keep-warm" <<BOOT_EOF
+#!/data/data/com.termux/files/usr/bin/sh
+# Telefon qayta yuklanganda: CPU uyg'oq ushlanadi va crond ko'tariladi.
+termux-wake-lock 2>/dev/null || true
+sv-enable crond 2>/dev/null || true
+sv up crond 2>/dev/null || true
+BOOT_EOF
+chmod +x "$HOME_DIR/.termux/boot/keep-warm"
+
+# CPU uyg'oq ushlasin (Android doze Termux'ni o'ldirmasin)
+command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock 2>/dev/null || true
+
+echo "== 6/6 sinov ping =="
 if "$PINGER"; then echo "OK: ping muvaffaqiyatli"; else echo "ogohlantirish: ping 200 qaytarmadi"; fi
 echo
 echo "crontab:"; crontab -l
